@@ -5,7 +5,11 @@
 // (thousands of rows), so a scan shows as one line from its hold's `captured` total instead. Adding up the deltas from
 // the oldest line gives the balance, the same sum the credits widget shows (holds only reserve credits).
 
-export type LedgerRow = { id: string; kind: string; delta: number; createdAt: string; source: string | null; business: string | null };
+export type LedgerRow = { id: string; kind: string; delta: number; createdAt: string; source: string | null; sourceId?: string | null; business: string | null };
+
+/** The credits an agency gets once when it is marked as a test account (markAgencyTest), named the same in admin. */
+export const TEST_START_LABEL = "Test account credits";
+export const isTestStartGrant = (sourceId: string | null | undefined) => Boolean(sourceId?.startsWith("test_agency_start:"));
 export type HoldRow = { id: string; status: string; amount: number; captured: number; createdAt: string; business: string | null };
 
 export type HistoryKind = "plan" | "trial" | "topup" | "promo" | "support" | "refund" | "expired" | "settled" | "scan" | "running";
@@ -39,6 +43,8 @@ function ledgerEntry(row: LedgerRow): Omit<HistoryEntry, "balance"> | null {
   const forBusiness = (label: string) => (row.business ? `${label}, ${row.business}` : label);
   switch (row.kind) {
     case "grant": {
+      // One name on both sides: admin said "Added by the system" and this page "Added by support" (BUG-325).
+      if (isTestStartGrant(row.sourceId)) return { ...base, kind: "support", label: forBusiness(TEST_START_LABEL) };
       const g = GRANT_LABEL[row.source ?? ""] ?? { kind: "promo" as const, label: "Credits added" };
       return { ...base, kind: g.kind, label: forBusiness(g.label) };
     }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TEST_START_LABEL, isTestStartGrant } from "@/modules/credit-history";
 import { actionLabel, type AdminAgencyDetail } from "@/modules/admin";
 import { DeletedBadge } from "../../../businesses/_components/scan-parts";
 import { formatDate } from "../../../_components/format";
@@ -33,7 +34,9 @@ const SOURCES: Record<string, string> = {
  * "Trial", "Plan", "Top-up" or "Admin" for a grant; "Trial credits expired" for an expiry; else what the row did.
  * Admin credits no admin gave (seed data, the system) say so instead of "Admin" (admin audit 2026-11-12).
  */
-export function ledgerLabel(row: { kind: string; source: string | null; delta?: number; by?: string | null }): string {
+export function ledgerLabel(row: { kind: string; source: string | null; sourceId?: string | null; delta?: number; by?: string | null }): string {
+  // The same name the customer's Usage page uses (BUG-325).
+  if (row.kind === "grant" && isTestStartGrant(row.sourceId)) return TEST_START_LABEL;
   const byNoAdmin = row.by === null && (row.kind === "admin_adjust" || (row.kind === "grant" && row.source === "admin"));
   if (byNoAdmin) return (row.delta ?? 0) < 0 ? "Removed by the system" : "Added by the system";
   const source = row.source ? SOURCES[row.source] : undefined;

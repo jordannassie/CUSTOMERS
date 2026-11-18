@@ -101,7 +101,7 @@ export function AddActionDialog({ businessId, add }: { businessId: string; add: 
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="action-where">Where to apply it</Label>
-            <Input id="action-where" name="where" maxLength={200} placeholder="Home page, Google Business Profile, yelp.com" />
+            <Input id="action-where" name="where" maxLength={200} placeholder="Home page, yelp.com" />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="action-notes">Notes</Label>

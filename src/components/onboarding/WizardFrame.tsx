@@ -28,7 +28,7 @@ export function WizardFrame({ steps, title, lead, embedded = false, children }: 
       {!embedded ? (
         <aside className="hidden border-r border-border bg-muted lg:block">
           <div className="sticky top-0 flex min-h-dvh flex-col px-6 py-8">
-            <Image src="/images/logos/logo-black.png" alt="Customers.Direct" width={96} height={32} className="h-8 w-auto self-start" />
+            <Image src="/images/logos/logo-black-sidebar.png" alt="Customers.Direct" width={640} height={89} className="h-6 w-auto self-start" />
             <p className="mt-8 text-[length:calc(13px*var(--px,1))] text-muted-foreground">Setting up</p>
             <ol className="mt-3 flex flex-col gap-1" aria-label="Setup steps">
               {steps.map((s, i) => (
@@ -57,7 +57,7 @@ export function WizardFrame({ steps, title, lead, embedded = false, children }: 
             banners' left edge, like every other app page. */}
         <div className={embedded ? "mx-auto w-full max-w-[calc(1200px*var(--px,1))] px-4 py-4 sm:px-6 sm:py-5" : cn(STEP_COLUMN, "mx-auto py-8 lg:py-12")}>
           <div className={embedded ? STEP_WIDTH : undefined}>
-            {embedded ? <StepProgress steps={steps} index={index} label={current?.label} className="mb-6" /> : null}
+            {embedded && steps.length > 0 ? <StepProgress steps={steps} index={index} label={current?.label} className="mb-6" /> : null}
             <header className="mb-6">
               <h1 className="text-2xl font-semibold tracking-[-0.02em] sm:text-[length:calc(32px*var(--px,1))] sm:leading-tight">{title}</h1>
               {lead ? <p className="mt-3 max-w-xl text-[length:calc(15px*var(--px,1))] leading-relaxed text-muted-foreground">{lead}</p> : null}

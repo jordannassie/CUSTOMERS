@@ -3,7 +3,7 @@
 import { cn } from "cn";
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis } from "recharts";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
-import { axisTicks, axisTop } from "@/lib/chart-scale";
+import { axisTicks, axisTop, percentTick } from "@/lib/chart-scale";
 
 /** One business on the one scan day: `value` is the share of that scan's answers naming it, null without checks. */
 export type ScanBar = { key: string; name: string; isYou: boolean; value: number | null; color: string };
@@ -88,7 +88,7 @@ export function FirstScanBars({
         <BarChart data={data} margin={{ top: 20, right: 12, bottom: 0, left: 0 }} barCategoryGap="28%">
           <CartesianGrid vertical={false} />
           <XAxis dataKey="name" tickLine={false} axisLine={false} interval={0} height={40} tick={<NameTick youKey="You" />} />
-          <YAxis domain={[0, top]} ticks={axisTicks(top)} tickLine={false} axisLine={false} width={32} />
+          <YAxis domain={[0, top]} ticks={axisTicks(top)} tickFormatter={percentTick} tickLine={false} axisLine={false} width={38} />
           <Bar dataKey="value" radius={[2, 2, 0, 0]} maxBarSize={56} isAnimationActive={false}>
             {data.map((d) => (
               <Cell key={d.key} fill={d.color} />

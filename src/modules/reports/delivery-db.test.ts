@@ -235,7 +235,7 @@ describe("report branding", () => {
   it("checks each field and saves only what is set", async () => {
     const owner = await createOwner();
     session = owner.client;
-    expect(await saveReportBranding({ accent: "blue", contactEmail: "", bookingUrl: "" })).toMatchObject({ ok: false, status: 400, error: "Use a colour like #1F4FD1." });
+    expect(await saveReportBranding({ accent: "blue", contactEmail: "", bookingUrl: "" })).toMatchObject({ ok: false, status: 400, error: "Use a color like #1F4FD1." });
     expect(await saveReportBranding({ accent: "#1F4FD1", contactEmail: "not an email", bookingUrl: "" })).toMatchObject({ ok: false, status: 400 });
     const http = await saveReportBranding({ accent: "#1F4FD1", contactEmail: "", bookingUrl: "http://agency.example/book" });
     expect(http).toMatchObject({ ok: false, status: 400, error: "Enter a link that starts with https://." });

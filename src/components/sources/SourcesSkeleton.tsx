@@ -20,21 +20,21 @@ export function SourcesSkeleton() {
           </div>
         ))}
       </div>
-      <div className="grid overflow-hidden rounded-lg border border-border xl:grid-cols-[minmax(0,1fr)_calc(320px*var(--px,1))]">
-        <Rows count={7} bar />
-        <div className="border-t border-border xl:border-t-0 xl:border-l">
-          <Rows count={7} />
-        </div>
-      </div>
-      <div className="grid gap-5 xl:grid-cols-2">
+      {/* "Websites AI used most": one full-width list, as loaded (BUG-314: this was two columns). */}
+      <Box>
+        <Rows count={6} bar />
+      </Box>
+      <div className="grid gap-4 xl:grid-cols-2">
+        {/* "Kinds of websites": a bar per kind (no donut since BUG-313). */}
         <Box>
-          <div className="flex items-center gap-6 p-5">
-            <Skeleton className="size-[calc(140px*var(--px,1))] shrink-0 rounded-full" />
-            <div className="flex flex-1 flex-col gap-3">
-              {Array.from({ length: 3 }, (_, i) => (
-                <Skeleton key={i} className="h-4" />
-              ))}
-            </div>
+          <div className="flex flex-col gap-4 px-4 py-5">
+            {Array.from({ length: 3 }, (_, i) => (
+              <div key={i} className="flex flex-col gap-1.5">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-1.5 w-full" />
+                <Skeleton className="h-3 w-48" />
+              </div>
+            ))}
           </div>
         </Box>
         <Box>

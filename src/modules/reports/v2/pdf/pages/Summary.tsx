@@ -74,7 +74,7 @@ function KpiRow({ ctx }: { ctx: ReportCtx }) {
           problem={ownSite.cited === 0}
         />
       ) : (
-        <Kpi label="Your website used" value="None" note="No website on file" problem />
+        <Kpi label="Your website used" value="No site" note="No website on file" problem />
       )}
     </View>
   );

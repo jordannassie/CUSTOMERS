@@ -19,7 +19,7 @@ export default function AccountDeletedPage() {
       <Suspense fallback={null}>
         <LeaveIfNotDeleted />
       </Suspense>
-      <Logo className="h-8 w-auto" />
+      <Logo trimmed className="h-6 w-auto" />
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 text-center">
         <Trash2 className="mx-auto size-10 text-low" aria-hidden="true" />
         <h1 className="mt-4 text-xl font-semibold text-foreground">This account was deleted</h1>

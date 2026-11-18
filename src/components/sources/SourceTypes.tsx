@@ -9,24 +9,29 @@ const COLOR: Record<SourceType, string> = {
   business: "var(--cd-series-2)",
 };
 
-const R = 54;
-const C = 2 * Math.PI * R;
-
-/** How many answers leaned on each kind of site, as a donut with the answers in the middle and a legend beside it. */
+/**
+ * How many answers leaned on each kind of site: one bar per kind, each out of all the answers. One answer can use
+ * several kinds, so the shares add up to more than 100%; a donut drew them as slices of one whole (67% and 67% as two
+ * halves, BUG-313).
+ */
 export function SourceTypes({ types, answers }: { types: SourcesView["types"]; answers: number }) {
   const sum = types.reduce((n, t) => n + t.answers, 0);
   const overlap = sum > answers;
   return (
     <div className="flex flex-col gap-4 px-4 py-5 sm:px-4">
-      <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
-        <Donut types={types} sum={sum} answers={answers} />
-        <ul className="flex w-full min-w-0 flex-1 flex-col gap-3" data-testid="source-types">
-          {types.map((t) => (
+      <ul className="flex w-full min-w-0 flex-col gap-4" data-testid="source-types">
+        {types.map((t) => {
+          const share = Math.round((t.answers / Math.max(answers, 1)) * 100);
+          return (
             // The label comes first and the answers line right after it in reading order; the percent sits top right.
-            <li key={t.type} className="grid grid-cols-[calc(8px*var(--px,1))_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-0.5 text-[length:calc(13px*var(--px,1))]">
+            <li key={t.type} className="grid grid-cols-[calc(8px*var(--px,1))_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 text-[length:calc(13px*var(--px,1))]">
               <span className="row-start-1 size-2 rounded-[2px]" style={{ background: COLOR[t.type] }} aria-hidden="true" />
               <span className="col-start-2 row-start-1 truncate font-medium">{t.label}</span>
-              <span className="col-start-2 row-start-2 truncate text-xs text-text-hint" title={t.kinds.join(", ")}>
+              <span className="col-start-3 row-start-1 font-semibold tabular-nums">{share}%</span>
+              <span className="col-span-2 col-start-2 row-start-2 h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                <span className="block h-full rounded-full" style={{ width: `${Math.max(share, share > 0 ? 2 : 0)}%`, background: COLOR[t.type] }} />
+              </span>
+              <span className="col-span-2 col-start-2 row-start-3 truncate text-xs text-text-hint" title={t.kinds.join(", ")}>
                 {answersText(t.answers, answers)}
                 <span>
                   {" "}
@@ -34,50 +39,13 @@ export function SourceTypes({ types, answers }: { types: SourcesView["types"]; a
                   {t.kinds.length > 1 ? `: ${t.kinds.join(", ")}` : ""}
                 </span>
               </span>
-              <span className="col-start-3 row-start-1 font-semibold tabular-nums">
-                {Math.round((t.answers / Math.max(answers, 1)) * 100)}%
-              </span>
             </li>
-          ))}
-        </ul>
-      </div>
+          );
+        })}
+      </ul>
       {overlap && (
-        <p className="text-xs text-text-hint">One answer can use several kinds, so these add up to more than {answers}.</p>
+        <p className="text-xs text-text-hint">One answer can use several kinds, so these add up to more than 100%.</p>
       )}
     </div>
-  );
-}
-
-function Donut({ types, sum, answers }: { types: SourcesView["types"]; sum: number; answers: number }) {
-  const gap = types.length > 1 ? 3 : 0;
-  const parts = types.map((t) => (t.answers / Math.max(sum, 1)) * C);
-  const starts = parts.map((_, i) => parts.slice(0, i).reduce((a, b) => a + b, 0));
-  return (
-    <svg width="140" height="140" viewBox="0 0 140 140" className="shrink-0" aria-hidden="true">
-      <circle cx="70" cy="70" r={R} fill="none" stroke="var(--muted)" strokeWidth="14" />
-      {types.map((t, i) => {
-        const len = Math.max(parts[i] - gap, 0.5);
-        return (
-          <circle
-            key={t.type}
-            cx="70"
-            cy="70"
-            r={R}
-            fill="none"
-            stroke={COLOR[t.type]}
-            strokeWidth="14"
-            strokeDasharray={`${len} ${C - len}`}
-            strokeDashoffset={-starts[i]}
-            transform="rotate(-90 70 70)"
-          />
-        );
-      })}
-      <text x="70" y="70" textAnchor="middle" className="fill-foreground text-[length:calc(24px*var(--px,1))] font-semibold tabular-nums">
-        {answers}
-      </text>
-      <text x="70" y="88" textAnchor="middle" className="fill-muted-foreground text-[length:calc(11px*var(--px,1))]">
-        {answers === 1 ? "answer" : "answers"}
-      </text>
-    </svg>
   );
 }

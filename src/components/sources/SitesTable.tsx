@@ -18,6 +18,9 @@ import { ToolDots, ToolDotsKey } from "./ToolDots";
 
 const FIRST_ROWS = 12;
 
+/** The phone line's words for the Mentions you column: a sentence, not "Mentions you: no" (BUG-313). */
+const MENTIONS_PHRASE = { no: "Doesn't mention you", sometimes: "Sometimes mentions you", always: "Always mentions you" } as const;
+
 const FILTERS = [
   { value: "all", label: "All" },
   { value: "skips", label: "Skips you" },
@@ -109,7 +112,7 @@ export function SitesTable({ businessId, rows, answers, moreSites, add }: Props)
                           {r.kindLabel} · {answersText(r.answers, answers)} ·{" "}
                         </span>
                         <span className="md:hidden">
-                          {r.mentions === "own" || r.mentions === "competitor" ? MENTIONS_LABELS[r.mentions] : `Mentions you: ${MENTIONS_LABELS[r.mentions].toLowerCase()}`} ·{" "}
+                          {r.mentions === "own" || r.mentions === "competitor" ? MENTIONS_LABELS[r.mentions] : MENTIONS_PHRASE[r.mentions]} ·{" "}
                         </span>
                         {r.names.length > 0 ? (
                           <>
@@ -175,7 +178,7 @@ export function SitesTable({ businessId, rows, answers, moreSites, add }: Props)
 
 function RowCta({ row, businessId, add }: { row: SiteRow; businessId: string; add: AddToActions }) {
   if (row.cta === "listed" && row.action) {
-    return <AddToActionsButton businessId={businessId} action={row.action} inActions={row.inActions} actionId={row.actionId} add={add} label="Get listed" />;
+    return <AddToActionsButton businessId={businessId} action={row.action} inActions={row.inActions} actionId={row.actionId} add={add} />;
   }
   if (row.cta === "improve" || row.cta === "compare") {
     const href = row.cta === "compare" ? compareHref(row.competitorId) : "/actions";

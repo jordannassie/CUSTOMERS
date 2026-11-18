@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { CircleHelp, Triangle } from "lucide-react";
+import { Triangle } from "lucide-react";
 import { cn } from "cn";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { HelpTip as SharedHelpTip } from "@/components/ui/help-tip";
 
 // The Overview's card frame (mockup-ui): a white card, a header row with the title and one thing on the right, a
 // hairline, then the body. No shadow.
@@ -51,18 +51,9 @@ export function PanelHead({ title, help, right, link }: { title: string; help?: 
   );
 }
 
-/** A small help icon that shows a short note on hover or focus. */
+/** A small help icon: the note shows on hover, focus, click or tap (BUG-306). */
 export function HelpTip({ label, text }: { label: string; text: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button type="button" aria-label={label} className="-m-1 inline-flex size-6 items-center justify-center rounded-full text-text-hint hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
-          <CircleHelp className="size-3.5" aria-hidden="true" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-64 text-left font-normal">{text}</TooltipContent>
-    </Tooltip>
-  );
+  return <SharedHelpTip label={label} text={text} contentClassName="max-w-64" />;
 }
 
 /** A small up or down triangle in the good or low color, for a change chip. */

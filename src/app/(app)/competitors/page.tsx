@@ -58,14 +58,15 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
           description="How often AI picks you and the businesses you track, last 30 days."
           actions={
             <div className="flex flex-wrap items-center gap-2">
-              <Button asChild variant="outline">
+              {/* Same width on a phone, one per row (BUG-310). */}
+              <Button asChild variant="outline" className="max-sm:flex-1">
                 <Link prefetch={false} href={MANAGE}>
                   <Settings2 aria-hidden />
                   Manage list <span className="text-muted-foreground tabular-nums" data-testid="tracked-count">({tracked})</span>
                 </Link>
               </Button>
               {view.count > 0 && (
-                <Button asChild>
+                <Button asChild className="max-sm:flex-1">
                   <Link href={compareHref()}>
                     <GitCompareArrows aria-hidden />
                     Compare side by side

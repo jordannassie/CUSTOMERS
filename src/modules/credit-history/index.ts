@@ -3,7 +3,7 @@ import "server-only";
 import { readCreditHistory } from "./dal";
 import { buildHistory, historyPage } from "./service";
 
-export { HISTORY_PAGE_SIZE, type HistoryEntry, type HistoryKind } from "./service";
+export { HISTORY_PAGE_SIZE, TEST_START_LABEL, isTestStartGrant, type HistoryEntry, type HistoryKind } from "./service";
 
 /** One page of the agency's credit history, newest first. Callers pass the signed-in user's own agency. */
 export async function getCreditHistory(agencyId: string, page: number) {

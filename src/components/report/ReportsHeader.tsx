@@ -10,7 +10,8 @@ import { CopyEmailSummary } from "./CopyEmailSummary";
 import { ExportPdfButton } from "./ExportPdfButton";
 import { SharePanel, type CreateAction, type RevokeAction } from "./SharePanel";
 
-const DESCRIPTION = "Your client's AI visibility report. Download the PDF, share a link to it, or paste a summary into an email.";
+// For owners and agencies alike: "Your client's report" read wrong to an owner with no clients (BUG-317).
+const DESCRIPTION = "The AI visibility report for this business. Download the PDF, share a link to it, or paste a summary into an email.";
 
 /**
  * The Reports page header (D-90): Share link opens the share panel under it (also opened by /reports?share=1, the

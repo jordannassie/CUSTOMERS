@@ -4,10 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { cn } from "cn";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LEADS_CHANGED } from "../_components/admin-nav";
 import AdminPageHeader from "../_components/page-header";
+import FilterTabs from "../_components/filter-tabs";
 import { LeadDetail } from "./_components/lead-detail";
 import { LeadListEmpty, LeadListError, LeadNotFound, LeadPagination, LeadRows } from "./_components/lead-list";
 import { LeadsFilters, type FilterKey } from "./_components/leads-filters";
@@ -96,17 +96,11 @@ export default function LeadsClient({
   }
 
   const options = filterOptions(old);
-  const total = list?.total ?? 0;
 
   return (
     <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
-        title={
-          <>
-            Leads
-            {total > 0 && <Badge variant="secondary">{total.toLocaleString("en-US")} total</Badge>}
-          </>
-        }
+        title="Leads"
         subtitle={
           <>
             Messages from the contact page, the chat widget, the agency page and paid AI video ad briefs. A lead is New
@@ -122,6 +116,18 @@ export default function LeadsClient({
         }
       />
 
+      {/* Status as the tab bar every admin list uses, the other filters below it (BUG-324: five dropdowns and a
+          "9 total" chip, unlike the other admin pages). */}
+      <FilterTabs
+        label="Lead status"
+        active={view.status || "all"}
+        tabs={[["all", "All"] as const, ...options.status].map(([key, text]) => ({
+          key,
+          label: text.replace(/ \(.*\)$/, "").replace(/,.*$/, ""),
+          href: `${pathname}${viewQuery({ ...view, status: key === "all" ? "" : key, page: 1 }, null)}`,
+        }))}
+        onSelect={(key) => applyFilter("status", key === "all" ? "" : key)}
+      />
       <LeadsFilters view={view} search={searchText} admins={admins} options={options} onSearch={handleSearch} onFilter={applyFilter} />
 
       <div className="flex min-h-[calc(480px*var(--px,1))] overflow-hidden rounded-md border border-border bg-surface">

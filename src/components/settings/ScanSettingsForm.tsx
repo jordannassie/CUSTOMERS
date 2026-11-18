@@ -188,7 +188,8 @@ function Estimate({
           </p>
         </div>
       )}
-      <p className="mt-auto text-xs leading-relaxed text-text-hint">
+      {/* Right under the bar: mt-auto pushed it to the panel's foot and left a gap (BUG-320). */}
+      <p className="mt-1 text-xs leading-relaxed text-text-hint">
         {activeQuestions === 0 ? (
           <>
             No active questions yet, so checks use no credits.{" "}

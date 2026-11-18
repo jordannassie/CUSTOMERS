@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "cn";
+import { LinkPendingSpinner } from "@/components/ui/link-pending";
 import type { ProviderId } from "@/modules/scanning";
 import { TOOLS, toolHref } from "@/modules/sources/tools";
 
@@ -19,11 +20,12 @@ export function ToolFilter({ tool }: { tool: ProviderId | null }) {
                 scroll={false}
                 aria-current={on ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-7 items-center rounded-[4px] px-2.5 text-xs font-medium transition-colors duration-150 ease-out outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                  "inline-flex h-7 items-center gap-1 rounded-[4px] px-2.5 text-xs font-medium transition-colors duration-150 ease-out outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                   on ? "bg-surface text-foreground shadow-xs ring-1 ring-border" : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {o.label}
+                <LinkPendingSpinner />
               </Link>
             </li>
           );

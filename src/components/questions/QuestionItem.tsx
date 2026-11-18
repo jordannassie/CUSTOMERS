@@ -177,7 +177,7 @@ export function QuestionItem({ question, limitMessage, actions, gridClass }: Pro
         position={at >= 0 && list.length > 1 ? `Question ${at + 1} of ${list.length}` : null}
         returnFocus={() => opener.current?.focus()}
         facts={[
-          { label: "Topic", value: question.topic ? <Badge variant={PILL_VARIANT.plain}>{question.topic}</Badge> : <span className="text-text-hint">None</span> },
+          { label: "Topic", value: question.topic ? <Badge variant={PILL_VARIANT.plain}>{question.topic}</Badge> : <span className="text-text-hint">No topic yet</span> },
           {
             label: "Named you",
             value:

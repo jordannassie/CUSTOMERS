@@ -23,7 +23,7 @@ type Props = {
   /** The saved fix's id, so the link opens it on the board. */
   actionId?: string | null;
   add: AddToActions;
-  /** "Get listed" in the table, "Add to Actions" in the cards. */
+  /** "Add to Actions" everywhere on Sources: the table said "Get listed" for the same action (BUG-313). */
   label?: string;
 };
 

@@ -136,7 +136,8 @@ export function TrendCell({ question }: { question: QuestionRow }) {
       {t === null ? (
         series.length < 2 && (
           <span className="text-xs text-text-hint" title="Shows once this question has 2 scans">
-            Not yet
+            {/* "Not yet" read as "not checked" right after a scan (BUG-312). */}
+            After 2 scans
           </span>
         )
       ) : (

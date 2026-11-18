@@ -38,7 +38,6 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
       <SearchBox id="agencies-search" label="Search" placeholder="Agency name or owner email" />
       <FilterTabs
         label="Filter by status"
-        scroll
         active={status ?? "all"}
         tabs={FILTERS.map((f) => ({
           key: f.status ?? "all",
@@ -84,16 +83,20 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
                           <Link href={href(r.id)} className="line-clamp-2 min-w-0 break-words font-medium text-primary hover:underline" title={r.name}>
                             {r.name}
                           </Link>
-                          {r.isTest && <TestBadge />}
+                          {r.isTest && r.displayStatus !== "test_account" && <TestBadge />}
                         </span>
                         <span className="block truncate text-text-hint" title={r.ownerEmail ?? "Owner email unknown"}>{r.ownerEmail ?? "Owner email unknown"}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <StatusCell row={r} />
+                    {/* Status and Trial wrap inside set widths, so all six columns fit at 1440px: "Signed up" was cut
+                        off past the card's edge (BUG-322). */}
+                    <TableCell className="whitespace-normal">
+                      <div className="w-[calc(160px*var(--px,1))]">
+                        <StatusCell row={r} />
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <div className="w-[calc(170px*var(--px,1))]">
+                      <div className="w-[calc(130px*var(--px,1))]">
                         <span className="tabular-nums">{r.businesses}</span>
                         <span className="block truncate text-text-hint" title={r.planMix || "No plan yet"}>{r.planMix || "No plan yet"}</span>
                       </div>
@@ -101,7 +104,9 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
                     <TableCell>
                       <CreditsCell row={r} />
                     </TableCell>
-                    <TableCell>{trialText(r) ?? <span className="text-text-hint">None</span>}</TableCell>
+                    <TableCell className="whitespace-normal">
+                      <div className="w-[calc(120px*var(--px,1))]">{trialText(r) ?? <span className="text-text-hint">None</span>}</div>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{formatDate(r.createdAt)}</TableCell>
                   </TableRow>
                 ))}
@@ -117,7 +122,7 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
                     <span className="min-w-0">
                       <span className="flex items-start gap-2">
                         <span className="line-clamp-2 min-w-0 break-words text-[length:calc(14px*var(--px,1))] font-medium text-primary" title={r.name}>{r.name}</span>
-                        {r.isTest && <TestBadge />}
+                        {r.isTest && r.displayStatus !== "test_account" && <TestBadge />}
                       </span>
                       <span className="block truncate text-text-hint" title={r.ownerEmail ?? "Owner email unknown"}>{r.ownerEmail ?? "Owner email unknown"}</span>
                     </span>

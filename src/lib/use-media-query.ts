@@ -7,9 +7,10 @@ export const PHONE_QUERY = "(max-width: 767.98px)";
 
 /**
  * Whether a media query matches, kept in step as the window changes. The server and the first browser render both
- * answer false (desktop), so hydration always matches; the real answer follows on the next render.
+ * answer `serverGuess` (false, desktop, unless the page knows better from the request), so hydration always matches;
+ * the real answer follows on the next render.
  */
-export function useMediaQuery(query: string): boolean {
+export function useMediaQuery(query: string, serverGuess = false): boolean {
   return useSyncExternalStore(
     (onChange) => {
       const list = window.matchMedia(query);
@@ -17,7 +18,7 @@ export function useMediaQuery(query: string): boolean {
       return () => list.removeEventListener("change", onChange);
     },
     () => window.matchMedia(query).matches,
-    () => false,
+    () => serverGuess,
   );
 }
 

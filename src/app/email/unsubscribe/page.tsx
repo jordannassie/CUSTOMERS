@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { CircleCheck, MailX } from "lucide-react";
+import { Logo } from "@/components/marketing/Logo";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { readUnsubscribeToken } from "@/modules/email";
@@ -13,7 +14,8 @@ type Props = { searchParams: Promise<{ token?: string | string[]; done?: string 
 // so mail scanners that open links do not turn emails off.
 export default function UnsubscribePage({ searchParams }: Props) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-16">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-background px-4 py-16">
+      <Logo trimmed className="h-6 w-auto" />
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 text-center">
         <Suspense fallback={<UnsubscribeSkeleton />}>
           <UnsubscribeContent searchParams={searchParams} />

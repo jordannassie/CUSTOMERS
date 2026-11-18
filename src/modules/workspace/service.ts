@@ -95,7 +95,9 @@ export function usageWidget(usage: UsageNumbers, account: AccountState, now: Dat
   if (trialOver(account, now)) {
     headline = "Trial ended, waiting for your first payment";
   } else if (isTrial(account)) {
-    headline = `${trialText(daysUntil(account.trialEndsAt!, now))}, ${count(plan)} of ${count(periodCredits)} credits left`;
+    // No trial grant (a test agency, or credits an admin added): what is left, not "0 of 0 credits left" (BUG-304).
+    const left = hasPlan ? `${count(plan)} of ${count(periodCredits)} credits left` : `${plural(Math.max(0, balance), "credit")} left`;
+    headline = `${trialText(daysUntil(account.trialEndsAt!, now))}, ${left}`;
   } else if (hasPlan) {
     headline = `${count(periodUsed)} of ${count(periodCredits)} credits used`;
     // Past due, the plan does not renew until the card is fixed, so no renewal date is shown.
@@ -126,10 +128,10 @@ function formatDate(date: Date, timeZone: string): string {
   return customerDate(date, timeZone, { month: "long", day: "numeric" });
 }
 
-/** Days and trial credits left, then the charge date, or that nothing is charged after a cancel (B-45, MVP_SPEC 4.4). */
+/** Days and credits left, then the charge date; nothing is charged after a cancel or on a test agency (B-45, D-61). */
 function trialBanner(usage: UsageNumbers, account: AccountState, now: Date, timeZone: string): Banner {
   const days = daysUntil(account.trialEndsAt!, now, timeZone);
-  const credits = plural(splitCredits(usage).plan, "trial credit");
+  const credits = usage.periodCredits > 0 ? plural(splitCredits(usage).plan, "trial credit") : plural(Math.max(0, usage.balance), "credit"); // BUG-304
   const adding = usage.periodCredits === 0 && usage.balance === 0 && usage.periodUsed === 0;
   const timeLeft = days === 0 ? `Your free trial ends today, with ${credits} left.` : `Your free trial has ${plural(days, "day")} and ${credits} left.`;
   const left = adding ? `Your free trial has ${plural(days, "day")}. Your trial credits are being added.` : timeLeft;
@@ -142,6 +144,7 @@ function trialBanner(usage: UsageNumbers, account: AccountState, now: Date, time
       action: { label: "Keep my plan", href: BILLING_HREF },
     };
   }
+  if (account.isTest) return { kind: "trial", tone: "info", message: `${left} This is a test account, so nothing is charged.`, action: null };
   return { kind: "trial", tone: "info", message: `${left} Your card will be charged on ${date}.`, action: null };
 }
 

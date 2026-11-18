@@ -49,10 +49,10 @@ function FeaturedBanner() {
   return (
     <section className="mt-5 flex flex-col items-start justify-between gap-4 overflow-hidden rounded-2xl bg-gradient-to-r from-[#0757D4] to-[#3B82F6] px-5 py-5 text-white sm:px-6 md:h-[calc(168px*var(--px,1))] md:flex-row md:items-center md:py-0">
       <div className="max-w-xl">
-        <h2 className="text-[length:calc(20px*var(--px,1))] font-bold leading-snug sm:text-[length:calc(22px*var(--px,1))]">Discover the best AI tools to grow your business.</h2>
-        <p className="mt-1 text-[length:calc(13.5px*var(--px,1))] text-white/85">Explore powerful AI apps, software, and services, all in one place.</p>
+        <h2 className="text-[length:calc(20px*var(--px,1))] font-bold leading-snug sm:text-[length:calc(22px*var(--px,1))]">Find AI tools for your business.</h2>
+        <p className="mt-1 text-[length:calc(13.5px*var(--px,1))] text-white/85">Apps, software and services that help a local business, in one place.</p>
         <a href="#app-listings" className="mt-3 inline-flex h-9 items-center rounded-full bg-white px-4 text-[length:calc(13px*var(--px,1))] font-semibold text-[#0866F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0866F5]">
-          Explore AI Tools <span aria-hidden="true" className="ml-1">→</span>
+          See the apps <span aria-hidden="true" className="ml-1">→</span>
         </a>
       </div>
       <div className="grid grid-cols-5 gap-2">
@@ -92,14 +92,14 @@ function PopularStrip({ apps }: { apps: DirectoryApp[] }) {
 export function AppsBrowse({ query, result, ratings = {}, embedSrc = null, formId = null }: { query: DirectoryQuery; result: DirectoryResult; ratings?: Record<string, NativeSummary>; embedSrc?: string | null; formId?: string | null }) {
   const pills = [{ id: "all", label: "All" }, ...APP_CATEGORIES.map((category) => ({ id: category.id, label: category.label }))];
   return (
-    <div className="mx-auto max-w-[calc(1360px*var(--px,1))] px-4 pb-16 pt-28 sm:pt-32">
-      <h1 className="text-[length:calc(32px*var(--px,1))] font-bold tracking-tight text-foreground sm:text-[length:calc(40px*var(--px,1))]">AI Apps</h1>
+    <div className="mx-auto max-w-[calc(1360px*var(--px,1))] px-4 pb-16 pt-12 sm:pt-20">
+      <h1 className="text-[length:calc(32px*var(--px,1))] font-bold tracking-tight text-foreground sm:text-[length:calc(40px*var(--px,1))]">AI apps</h1>
       <p className="mt-1.5 max-w-2xl text-[length:calc(15px*var(--px,1))] text-muted-foreground">Search AI tools, apps, and software for growing a business.</p>
 
       <form action="/apps" method="get" className="relative mt-5" role="search">
         <label htmlFor="app-search" className="sr-only">Search AI tools, apps, and software</label>
         <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-hint" />
-        <input id="app-search" name="q" type="search" defaultValue={query.q} placeholder="Search AI tools, apps, and software..." className="h-12 w-full rounded-full border border-[#BFDBFE] bg-white pl-11 pr-16 text-[length:calc(15px*var(--px,1))] outline-none placeholder:text-text-hint focus:border-[#0866F5] focus-visible:ring-2 focus-visible:ring-[#0866F5]" />
+        <input id="app-search" name="q" type="search" defaultValue={query.q} placeholder="Search AI tools and apps" className="h-12 w-full rounded-full border border-[#BFDBFE] bg-white pl-11 pr-16 text-[length:calc(15px*var(--px,1))] outline-none placeholder:text-text-hint focus:border-[#0866F5] focus-visible:ring-2 focus-visible:ring-[#0866F5]" />
         {query.category !== "all" ? <input type="hidden" name="category" value={query.category} /> : null}
         {query.sort !== "name" ? <input type="hidden" name="sort" value={query.sort} /> : null}
         <button type="submit" aria-label="Search apps" className="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full bg-[#0866F5] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5] focus-visible:ring-offset-2">→</button>

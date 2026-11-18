@@ -112,17 +112,30 @@ test.afterAll(async () => {
 const NOT_AVAILABLE = "This report is not available. Ask the person who sent it to you for a new link.";
 const PDF_FILE = /^Sunrise Coffee Bar AI visibility report \d{4}-\d{2}-\d{2}\.pdf$/;
 
-/** The share link's redirect: 303 to a signed URL of the stored PDF, with nothing indexed, cached or referred. */
+/**
+ * The share link answers with the stored PDF itself, on our own address (BUG-318: it redirected to the storage host),
+ * shown in the browser, with nothing indexed, cached or referred. Returns the file's bytes.
+ */
 async function openLink(page: Page, link: string) {
   const response = await page.request.get(link, { maxRedirects: 0 });
-  expect(response.status()).toBe(303);
+  expect(response.status()).toBe(200);
   const headers = response.headers();
+  expect(headers["location"]).toBeUndefined();
+  expect(headers["content-type"]).toContain("application/pdf");
+  expect(headers["content-disposition"]).toMatch(/^inline/);
   expect(headers["x-robots-tag"]).toBe("noindex, nofollow");
   expect(headers["referrer-policy"]).toBe("no-referrer");
   expect(headers["cache-control"]).toContain("no-store");
-  const location = headers["location"];
-  expect(location).toMatch(/\/storage\/v1\/object\/sign\/reports\/[0-9a-f-]{36}\/[0-9a-f-]{36}-v2\.pdf\?token=/);
-  return location;
+  const body = await response.body();
+  expect(body.subarray(0, 5).toString()).toBe("%PDF-");
+  return body;
+}
+
+/** A stored report PDF's bytes, to tell which report a link opened. */
+async function storedPdf(businessId: string, reportId: string) {
+  const { data, error } = await db.storage.from("reports").download(`${businessId}/${reportId}-v2.pdf`);
+  if (error) throw error;
+  return Buffer.from(await data.arrayBuffer());
 }
 
 async function expectPdf(page: Page, link: string) {
@@ -171,9 +184,8 @@ test("Reports shows the report's numbers and adds its fixes to Actions; the shar
   await expect(page.getByTestId("share-panel")).toContainText("Share link is on");
   const link = await page.getByTestId("share-url").inputValue();
 
-  // Opened with no login, as a client would: a redirect to the stored PDF, never a page of the app.
-  const location = await openLink(page, link);
-  expect(location).toContain(owner.businessId);
+  // Opened with no login, as a client would: the stored PDF, never a page of the app.
+  await openLink(page, link);
   await expectPdf(page, link);
 
   await page.getByTestId("revoke-link").click();
@@ -220,8 +232,9 @@ test("a snapshot link keeps opening its own report after new answers come in", a
     .from("visibility_results")
     .insert({ run_id: run.id, business_id: owner.businessId, tracked_prompt_id: question.id, provider: "openai", business_mentioned: false, competitors_mentioned: [], cached: false, answer_text: "new answer" })
     .throwOnError();
-  expect(await openLink(page, frozen)).toContain(`/${reportId}-v2.pdf`);
-  expect(await openLink(page, live)).not.toContain(`/${reportId}-v2.pdf`);
+  const snapshotFile = await storedPdf(owner.businessId, reportId);
+  expect((await openLink(page, frozen)).equals(snapshotFile)).toBe(true);
+  expect((await openLink(page, live)).equals(snapshotFile)).toBe(false);
   await expectPdf(page, frozen);
 
   // Deleting the snapshot stops its link. Opening the live link saved a newer report (D-90), so pick the snapshot's

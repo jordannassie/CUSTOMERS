@@ -35,7 +35,7 @@ describe("overviewCompete", () => {
       ["You Co", 10, true],
       ["D", 10, false],
     ]);
-    expect(out.modelContext.openai).toBe("A 75 · B 15");
+    expect(out.modelContext.openai).toBe("A 75% · B 15%");
     expect(out.lines.map((l) => [l.key, l.name, l.latest])).toEqual([
       ["s0", "You Co", 12],
       ["s1", "A", 55],
@@ -83,7 +83,7 @@ describe("overviewCompete", () => {
     const chainReport = {
       charts: { ...report.charts!, names: ["You Co", "Bennu Coffee on Congress", "B", "C", "Bennu Coffee on 6th"], byModel: [{ model: "openai", scores: [0, 75, 90, 15, 70] }] },
     } as unknown as ScoreReport;
-    expect(overviewCompete(chainView, chainReport).modelContext.openai).toBe("Bennu Coffee 75 · C 15");
+    expect(overviewCompete(chainView, chainReport).modelContext.openai).toBe("Bennu Coffee 75% · C 15%");
   });
 });
 

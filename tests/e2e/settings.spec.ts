@@ -246,7 +246,7 @@ test("during a trial, the delete dialog says the business leaves the trial now a
   await page.reload();
   await page.getByRole("button", { name: "Delete business" }).click();
   const dialog = page.getByTestId("delete-dialog");
-  await expect(dialog.getByText("It leaves your trial now and you won't be charged for it.")).toBeVisible();
+  await expect(dialog.getByText("AI checks stop, its share links stop working, and it leaves your dashboard and your trial. You won't be charged for it.")).toBeVisible();
   await expect(dialog.getByText("End of this billing period")).toHaveCount(0);
   await expect(dialog.getByText(/no refund/)).toHaveCount(0);
 });

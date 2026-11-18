@@ -9,6 +9,9 @@ describe("axisTop", () => {
     expect(axisTop([])).toBe(10);
     expect(axisTop([100])).toBe(100);
     expect(axisTicks(50)).toEqual([0, 25, 50]);
+    // No half steps: 67% fits under 80, whose middle is 40, not 75 and 37.5 (BUG-308).
+    expect(axisTop([67])).toBe(80);
+    expect(axisTicks(80)).toEqual([0, 40, 80]);
   });
 });
 

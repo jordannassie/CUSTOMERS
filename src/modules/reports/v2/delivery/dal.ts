@@ -98,6 +98,26 @@ async function latestCountedAnswer(businessId: string): Promise<string | null> {
   return data?.created_at ?? null;
 }
 
+/**
+ * When the newest tracked competitor was added; null with none. Tracking one recounts the saved answers at once
+ * (recountAfterNamesChange), so a report older than that still said "no business you track was named" while the
+ * Overview showed the new one ahead (BUG-319).
+ */
+async function latestCompetitorAdded(businessId: string): Promise<string | null> {
+  const { data, error } = await createServiceClient()
+    .from("business_competitors")
+    .select("created_at")
+    .eq("business_id", businessId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`Reports: could not read the competitors: ${error.message}`);
+  return data?.created_at ?? null;
+}
+
+/** The later of two timestamps, either of which may be missing. */
+const later = (a: string, b: string | null) => (b && new Date(b).getTime() > new Date(a).getTime() ? b : a);
+
 // Reports newest first, as many as it takes to pass over a few old version 1 rows.
 const RECENT = 5;
 // The 30 days a report covers move on without new answers too, so a paused business gets a fresh one each week.
@@ -123,12 +143,14 @@ const sameLook = (a: ReportSnapshot["agency"], b: ReportSnapshot["agency"]) =>
 
 /**
  * The report a live share link, the weekly email and the Reports page show: the newest version 2 report saved after
- * the latest counted answer (so no scan has changed its numbers), in the last week and with the agency's branding as
- * it is now; otherwise a new one saved now. Callers check the business is the agency's.
+ * the latest counted answer and the latest competitor added (so no scan or recount has changed its numbers), in the
+ * last week and with the agency's branding as it is now; otherwise a new one saved now. Callers check the business is
+ * the agency's.
  */
 export async function currentReport(agencyId: string, businessId: string, now: Date): Promise<SavedV2 | "empty" | null> {
-  const [latest, look] = await Promise.all([latestCountedAnswer(businessId), agencyLook(agencyId, businessId)]);
-  if (!latest || !look) return saveReport(agencyId, businessId, now);
+  const [answer, competitor, look] = await Promise.all([latestCountedAnswer(businessId), latestCompetitorAdded(businessId), agencyLook(agencyId, businessId)]);
+  if (!answer || !look) return saveReport(agencyId, businessId, now);
+  const latest = later(answer, competitor);
   const { data, error } = await createServiceClient()
     .from("reports")
     .select("id, snapshot")

@@ -57,6 +57,7 @@ export function ActionsBoard({
   siteDomain = null,
   children,
   readOnly = false,
+  phoneHint = false,
 }: {
   businessId: string;
   initialItems: ActionItem[];
@@ -72,6 +73,8 @@ export function ActionsBoard({
   children?: ReactNode;
   /** An ended plan (MVP_SPEC 4.4): fixes can be read and filtered, not moved or assigned. */
   readOnly?: boolean;
+  /** The request came from a phone (user agent): the server renders the List, so it doesn't flip from the Board (BUG-315). */
+  phoneHint?: boolean;
 }) {
   // The server's list wins on every refresh; the board's own moves sit on top while they are saved (board-overrides.ts).
   const [overrides, setOverrides] = useState<Overrides>({});
@@ -89,7 +92,7 @@ export function ActionsBoard({
   // and is kept in this browser, so a reload keeps it.
   const [stored, setStored] = useStoredChoice("actions-view", VIEWS);
   const [picked, setPicked] = useState<"board" | "list" | null>(null);
-  const phone = useMediaQuery(PHONE_QUERY);
+  const phone = useMediaQuery(PHONE_QUERY, phoneHint);
   const view = picked ?? stored ?? (phone ? "list" : "board");
   const [impact, setImpact] = useState<Impact | "all">("all");
   const [place, setPlace] = useState<WhereFilter | "all">("all");

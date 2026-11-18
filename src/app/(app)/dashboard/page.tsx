@@ -61,27 +61,29 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
     trends ? questionCount(trends.rows.length, trends.own.length) : null,
     tools,
     overview.lastCheckedAt ? `Last scan ${shortDay(overview.lastCheckedAt)}` : "No scans yet",
-  ].filter(Boolean);
+  ].filter((part): part is string => Boolean(part));
 
   return (
     <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <PageHeader
         title={business.name}
         clampTitle={business.name}
-        description={meta.join(" · ")}
+        // Each part stays on one line; the line breaks only between parts, never as "Last / scan Nov 17" (BUG-308).
+        description={meta.map((part) => part.replace(/ /g, "\u00a0")).join(" · ")}
         descriptionTestId="last-scan"
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {score && <RangeControl days={days} />}
+            {/* On a phone: Run scan, then the range across the row, then View report and Share side by side (BUG-309). */}
+            {score && <RangeControl days={days} className="max-md:w-full" />}
             {score && (
               <>
-                <Button asChild variant="outline" size="sm">
+                <Button asChild variant="outline" size="sm" className="max-md:flex-1">
                   <Link href="/reports">
                     <FileText aria-hidden="true" />
                     View report
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="sm">
+                <Button asChild variant="outline" size="sm" className="max-md:flex-1">
                   <Link href="/reports?share=1">
                     <Share2 aria-hidden="true" />
                     Share
@@ -171,9 +173,9 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
 
 const shortDay = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
-/** "12 customer questions", or "12 customer questions, 2 your own" when some are the user's own (not in the score). */
+/** "12 customer questions", or "12 customer questions (2 added by you)" when some are the user's own (not in the score). */
 function questionCount(suggested: number, own: number): string {
   const total = suggested + own;
   const all = `${total} customer ${total === 1 ? "question" : "questions"}`;
-  return own > 0 ? `${all}, ${own} your own` : all;
+  return own > 0 ? `${all} (${own} added by you)` : all;
 }

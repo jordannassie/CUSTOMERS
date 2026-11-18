@@ -36,7 +36,9 @@ export function Select({ id, name, value, onValueChange, options, placeholder, r
     <SelectPrimitive.Root name={name} value={value} onValueChange={onValueChange} required={required} disabled={disabled} autoComplete={autoComplete}>
       <SelectPrimitive.Trigger id={id} className={cn(SELECT_TRIGGER_CLASS, className)} {...aria}>
         <span className="min-w-0 truncate">
-          <SelectPrimitive.Value placeholder={placeholder} />
+          {/* The chosen option's label given here, so the server's HTML shows it: Radix fills it in only after the
+              list mounts in the browser, so filters showed as empty boxes until then (BUG-315). */}
+          <SelectPrimitive.Value placeholder={placeholder}>{options.find((o) => o.value === value)?.label}</SelectPrimitive.Value>
         </span>
         <SelectPrimitive.Icon asChild>
           <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />

@@ -72,22 +72,16 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
             </span>
           }
           description="Pick a competitor to see the facts behind every gap, and what to do about each one."
+          // Only a site to open: "Check their website" already sits on the Website tab below (BUG-311).
           actions={
-            data ? (
+            data && visit ? (
               <Button asChild variant="outline">
-                {visit ? (
-                  <a href={visit} target="_blank" rel="noopener noreferrer">
-                    <Globe aria-hidden="true" />
-                    Their website
-                    <ExternalLink className="size-3.5 text-muted-foreground" aria-hidden="true" />
-                    <span className="sr-only">(opens in a new tab)</span>
-                  </a>
-                ) : (
-                  <Link href={compareHref(data.panel.competitorId, "website")}>
-                    <Globe aria-hidden="true" />
-                    Check their website
-                  </Link>
-                )}
+                <a href={visit} target="_blank" rel="noopener noreferrer">
+                  <Globe aria-hidden="true" />
+                  Their website
+                  <ExternalLink className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                  <span className="sr-only">(opens in a new tab)</span>
+                </a>
               </Button>
             ) : undefined
           }

@@ -212,7 +212,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
           )}
 
           <p className="mt-5 text-center text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-            Having trouble signing in?{" "}
+            {isSignup ? "Having trouble signing up?" : "Having trouble logging in?"}{" "}
             {/* No prefetch on the login and signup pages: each view rendered these pages on the server for nothing. */}
             <Link href="/contact?topic=support" prefetch={false} className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
               Contact support
@@ -221,9 +221,12 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
         </div>
       </AuthCard>
 
-      <p className="mt-4 text-center text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-        7-day free trial. Credit card required.
-      </p>
+      {/* The trial line is for new accounts only; people logging in already have one (polish sweep, BUG-302). */}
+      {isSignup && (
+        <p className="mt-4 text-center text-[length:calc(13px*var(--px,1))] text-muted-foreground">
+          7-day free trial. Credit card required.
+        </p>
+      )}
     </div>
   );
 }

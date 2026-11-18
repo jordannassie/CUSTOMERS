@@ -96,15 +96,17 @@ export function AppShell({
             <Link
               href="/dashboard"
               aria-label="Customers.Direct, go to Overview"
-              className="flex-1"
+              className="min-w-0 flex-1"
             >
+              {/* The trimmed wordmark: the full file is mostly empty margin, so at h-7 it read at half the desktop size (BUG-305).
+                  object-contain: squeezed by the pills, it shrinks instead of stretching out of shape. */}
               <Image
-                src="/images/logos/logo-black.png"
+                src="/images/logos/logo-black-sidebar.png"
                 alt=""
-                width={84}
-                height={28}
+                width={640}
+                height={89}
                 loading="eager"
-                className="h-7 w-auto"
+                className="h-4 w-auto max-w-full object-contain object-left"
               />
             </Link>
             {testMode && <TestModePill />}

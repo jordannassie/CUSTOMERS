@@ -11,7 +11,8 @@ export function TestModePill() {
   return (
     <span className={cn(PILL_BOX, PILL_CLASS.plain, "gap-1")} title={TEST_MODE_MESSAGE} data-testid="test-mode-pill">
       <FlaskConical className="size-3" aria-hidden="true" />
-      Test mode
+      {/* "Test" on a phone, so the logo beside it keeps its size (BUG-305); the full words stay for screen readers. */}
+      Test<span className="max-sm:sr-only"> mode</span>
       <span className="sr-only">. {TEST_MODE_MESSAGE.replace(/^Test mode: /, "")}</span>
     </span>
   );

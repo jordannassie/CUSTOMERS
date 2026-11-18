@@ -1,7 +1,8 @@
 import type { ReviewStatus } from "@/modules/apps-directory/review-types";
 
-// Every review can be found again (admin audit 2026-11-12): the queue, then one tab per decision, then all.
-export const REVIEW_TABS = ["pending", "published", "rejected", "removed", "all"] as const;
+// Every review can be found again (admin audit 2026-11-12): all, the queue, then one tab per decision. "All" comes
+// first as on every other admin tab bar (BUG-324); Pending stays the page's default.
+export const REVIEW_TABS = ["all", "pending", "published", "rejected", "removed"] as const;
 export type ReviewTab = (typeof REVIEW_TABS)[number];
 
 export const STATUS_LABELS: Record<ReviewStatus, string> = {

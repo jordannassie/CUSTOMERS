@@ -31,6 +31,29 @@ function ReasonRow({ ctx, reason }: { ctx: ReportCtx; reason: Reason }) {
   );
 }
 
+/**
+ * Nobody tracked is ahead: the tracked businesses and how often AI named each, and what this page will show, instead
+ * of one line on an empty page (BUG-319).
+ */
+function NobodyAhead({ ctx }: { ctx: ReportCtx }) {
+  const { businesses } = ctx.snapshot;
+  const named = (n: number) => (n === 0 ? "Not named in any answer" : `Named in ${n} ${n === 1 ? "answer" : "answers"}`);
+  return (
+    <View style={{ paddingTop: 12 }}>
+      <Text style={{ fontSize: 10, color: COLORS.secondary, marginBottom: 10 }}>No tracked competitor is ahead of you in these answers.</Text>
+      {businesses.map((b) => (
+        <View key={b.name} wrap={false} style={[s.row, { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.divider }]}>
+          <Text style={[{ flex: 1, fontSize: 10.5, fontWeight: b.isYou ? 700 : 600 }, lines(1)]}>{b.isYou ? `${b.name} (you)` : b.name}</Text>
+          <Text style={{ fontSize: 10, color: COLORS.secondary }}>{named(b.mentions)}</Text>
+        </View>
+      ))}
+      <Text style={{ fontSize: 9.75, color: COLORS.secondary, lineHeight: 1.5, marginTop: 12 }}>
+        When AI names one of them instead of you, this page shows why it picked them and what to change.
+      </Text>
+    </View>
+  );
+}
+
 export function Behind({ ctx }: { ctx: ReportCtx }) {
   const { behind } = ctx.snapshot;
   return (
@@ -42,9 +65,7 @@ export function Behind({ ctx }: { ctx: ReportCtx }) {
         {behind.reasons.length > 0 ? (
           behind.reasons.map((reason) => <ReasonRow key={reason.title} ctx={ctx} reason={reason} />)
         ) : (
-          <Text style={{ fontSize: 10, color: COLORS.secondary, paddingTop: 12 }}>
-            No tracked competitor is ahead of you in these answers.
-          </Text>
+          <NobodyAhead ctx={ctx} />
         )}
       </View>
 

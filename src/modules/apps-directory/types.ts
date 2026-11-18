@@ -1,5 +1,5 @@
 export const APP_CATEGORIES = [
-  { id: "ai-tools", label: "AI Tools" },
+  { id: "ai-tools", label: "AI tools" },
   { id: "ai-search", label: "AI search" },
   { id: "marketing", label: "Marketing" },
   { id: "sales", label: "Sales" },

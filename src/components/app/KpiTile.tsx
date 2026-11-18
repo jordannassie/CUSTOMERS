@@ -20,7 +20,8 @@ export function KpiTile({ label, value, sub, testId, trend, change }: KpiTilePro
     <div className="flex min-w-0 flex-col gap-1 bg-surface px-4 pt-3 pb-2.5" data-testid={testId}>
       <span className="text-xs text-muted-foreground">{label}</span>
       <div className="flex items-end justify-between gap-2">
-        <span className="truncate text-[length:calc(20px*var(--px,1))] leading-tight font-semibold tracking-[-0.03em] tabular-nums">
+        {/* Wraps instead of cutting off ("Not named y...", BUG-310); a long site name breaks anywhere. */}
+        <span className="min-w-0 text-[length:calc(20px*var(--px,1))] leading-tight font-semibold tracking-[-0.03em] tabular-nums [overflow-wrap:anywhere]">
           {value}
         </span>
         {showTrend && (
@@ -31,9 +32,9 @@ export function KpiTile({ label, value, sub, testId, trend, change }: KpiTilePro
         )}
       </div>
       {(sub || change) && (
-        <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+        <span className="flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground">
           {change}
-          {sub && <span className="truncate">{sub}</span>}
+          {sub && <span className="min-w-0 [overflow-wrap:anywhere]">{sub}</span>}
         </span>
       )}
     </div>

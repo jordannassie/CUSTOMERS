@@ -103,7 +103,16 @@ function Stat({
       <span className="flex items-end justify-between gap-2">
         <span className="flex items-center gap-2">
           {value !== null && <ScoreRing value={value} color={color} size={28} />}
-          <span className={cn("text-[length:calc(26px*var(--px,1))] leading-tight font-semibold tracking-[-0.03em] tabular-nums", you && "text-primary")}>{value ?? "Not checked"}</span>
+          {/* Words in the number's 26px size wrapped over two lines on a phone (BUG-311). */}
+          <span
+            className={cn(
+              "leading-tight font-semibold tracking-[-0.03em] tabular-nums",
+              value === null ? "text-[length:calc(18px*var(--px,1))]" : "text-[length:calc(26px*var(--px,1))]",
+              you && "text-primary",
+            )}
+          >
+            {value ?? "Not checked yet"}
+          </span>
         </span>
         {/* With fewer than two scans the line would only say "Not enough scans": left out. */}
         {known(spark) && (

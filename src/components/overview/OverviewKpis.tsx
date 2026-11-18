@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "cn";
+import { LinkPendingSpinner } from "@/components/ui/link-pending";
 import type { OverviewCompete } from "@/modules/competitors";
 import type { SourcesPage } from "@/modules/sources";
 import type { SourceLine } from "./OverviewCards";
@@ -35,20 +36,21 @@ export function sourceLines(sources: SourcesPage | null): SourceLine[] {
 }
 
 /** 7, 30 or 90 days, as links (the server reads the range), in the white-on-muted segmented look (mockup-ui). */
-export function RangeControl({ days }: { days: number }) {
+export function RangeControl({ days, className }: { days: number; className?: string }) {
   return (
-    <div className="inline-flex h-8 items-center gap-0.5 rounded-md border border-border bg-muted p-0.5" role="group" aria-label="Date range" data-testid="range">
+    <div className={cn("inline-flex h-8 items-center gap-0.5 rounded-md border border-border bg-muted p-0.5", className)} role="group" aria-label="Date range" data-testid="range">
       {RANGES.map((r) => (
         <Link
           key={r}
           href={r === 30 ? "/dashboard" : `/dashboard?range=${r}`}
           aria-current={r === days ? "true" : undefined}
           className={cn(
-            "flex h-[calc(26px*var(--px,1))] items-center rounded-[4px] px-2.5 text-xs whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+            "flex h-[calc(26px*var(--px,1))] items-center justify-center gap-1 rounded-[4px] px-2.5 max-md:flex-1 text-xs whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
             r === days ? "bg-surface font-medium text-foreground shadow-[0_0_0_1px_var(--border)]" : "text-muted-foreground hover:text-foreground",
           )}
         >
           {r} days
+          <LinkPendingSpinner />
         </Link>
       ))}
     </div>

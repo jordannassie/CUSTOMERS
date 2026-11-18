@@ -73,7 +73,7 @@ export function RunScanButton({
   // No worker picked the job up: no spinner, since nothing is being asked right now.
   const stalled = status.scanning && status.stalled && !status.retrying && !pending;
   const blocked = !scanning && status.blockedReason !== null;
-  const text = note?.text ?? (scanning ? (status.retrying ? RETRYING : stalled ? STALLED : "Results appear in about a minute.") : "");
+  const text = note?.text ?? (scanning ? (status.retrying ? RETRYING : stalled ? STALLED : "Checking now. Results show here when it's done.") : "");
 
   function run(confirmRecent = false) {
     if (scanning) return setNote({ text: ALREADY_RUNNING, tone: "muted" });

@@ -16,6 +16,8 @@ describe("ledgerLabel (agency credit history)", () => {
   });
   it("names admin credits no admin gave as the system's (admin audit 2026-11-12)", () => {
     expect(ledgerLabel({ kind: "grant", source: "admin", delta: 500, by: null })).toBe("Added by the system");
+    // A test account's starting credits: the same name as on the customer's Usage page (BUG-325).
+    expect(ledgerLabel({ kind: "grant", source: "admin", sourceId: "test_agency_start:abc", delta: 150, by: null })).toBe("Test account credits");
     expect(ledgerLabel({ kind: "admin_adjust", source: null, delta: -20, by: null })).toBe("Removed by the system");
     expect(ledgerLabel({ kind: "grant", source: "admin", delta: 500, by: "ops@example.test" })).toBe("Admin");
     expect(ledgerLabel({ kind: "grant", source: "plan", delta: 500, by: null })).toBe("Plan");

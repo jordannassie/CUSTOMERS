@@ -14,7 +14,7 @@ export type SaveBrandingAction = (input: unknown) => Promise<ActionResult<Report
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 const FAILED = "Something went wrong. Try again in a moment.";
 
-/** Accent colour, contact email and booking link for new reports (D-90). Checked here and again on the server. */
+/** Accent color, contact email and booking link for new reports (D-90). Checked here and again on the server. */
 export function BrandingForm({
   initial,
   save,
@@ -32,7 +32,7 @@ export function BrandingForm({
   function submit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
-    if (!accentOk) return setError("Use a colour like #1F4FD1.");
+    if (!accentOk) return setError("Use a color like #1F4FD1.");
     if (bookingUrl.trim() && !bookingUrl.trim().startsWith("https://")) return setError("Enter a link that starts with https://.");
     startTransition(async () => {
       const result = await save({ accent, contactEmail, bookingUrl }).catch(() => null);
@@ -45,7 +45,7 @@ export function BrandingForm({
   return (
     <form onSubmit={submit} className="flex flex-col gap-3" noValidate data-testid="branding-form">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="report-accent">Accent colour</Label>
+        <Label htmlFor="report-accent">Accent color</Label>
         <div className="flex items-center gap-2">
           <span
             aria-hidden

@@ -12,7 +12,7 @@ export async function readCreditHistory(agencyId: string): Promise<{ ledger: Led
   const [ledger, holds] = await Promise.all([
     db
       .from("credit_transactions")
-      .select("id, kind, delta, created_at, credit_grants(source, businesses(name))")
+      .select("id, kind, delta, created_at, credit_grants(source, source_id, businesses(name))")
       .eq("agency_id", agencyId)
       .not("kind", "in", "(capture,release)")
       .order("created_at", { ascending: false })
@@ -34,6 +34,7 @@ export async function readCreditHistory(agencyId: string): Promise<{ ledger: Led
       delta: r.delta,
       createdAt: r.created_at,
       source: r.credit_grants?.source ?? null,
+      sourceId: r.credit_grants?.source_id ?? null,
       business: r.credit_grants?.businesses?.name ?? null,
     })),
     holds: holds.data.map((h) => ({

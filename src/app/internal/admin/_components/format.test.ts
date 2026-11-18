@@ -21,7 +21,8 @@ describe("admin formats (2026-10-19)", () => {
 
   it("writes per-check prices with 4 decimals", () => {
     expect(unitPrice(0.0042)).toBe("$0.0042");
-    expect(unitPrice(0.09)).toBe("$0.0900");
+    expect(unitPrice(0.09)).toBe("$0.09");
+    expect(unitPrice(0.0125)).toBe("$0.0125");
     expect(unitPrice(null)).toBe("");
   });
 

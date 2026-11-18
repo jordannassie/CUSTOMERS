@@ -48,6 +48,8 @@ export type AdminAgencyDetail = {
     delta: number;
     kind: string;
     source: string | null;
+    /** The grant's key, "test_agency_start:<id>" for a test account's starting credits. */
+    sourceId: string | null;
     business: string | null;
     note: string | null;
     by: string | null;
@@ -97,7 +99,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
       .order("created_at"),
     db
       .from("credit_transactions")
-      .select("id, delta, kind, note, admin_user_id, created_at, credit_grants(source, businesses(name))")
+      .select("id, delta, kind, note, admin_user_id, created_at, credit_grants(source, source_id, businesses(name))")
       .eq("agency_id", agencyId)
       // Scan spending has its own pages; this list is grants, expiries and admin changes.
       .not("kind", "in", "(capture,release)")
@@ -169,6 +171,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
       delta: l.delta,
       kind: l.kind,
       source: l.credit_grants?.source ?? null,
+      sourceId: l.credit_grants?.source_id ?? null,
       business: l.credit_grants?.businesses?.name ?? null,
       note: l.note,
       by: l.admin_user_id ? (emails.get(l.admin_user_id) ?? "Removed admin") : null,

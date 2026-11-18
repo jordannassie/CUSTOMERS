@@ -328,9 +328,11 @@ for (const width of WIDTHS) {
     await expect(h1("Settings")).toBeVisible();
     await shot(page, width, "settings");
 
-    // A share link opens the report PDF (D-90): there is no share page to lay out, only a redirect to the file.
+    // A share link opens the report PDF (D-90): there is no share page to lay out. It answers on our own address now
+    // (BUG-318), with the PDF or, when this seeded link has no stored file yet, a plain "try again" message; never a redirect.
     const shared = await page.request.get(`/r/${shareToken}`, { maxRedirects: 0 });
-    expect(shared.status()).toBe(303);
+    expect(shared.headers()["location"]).toBeUndefined();
+    expect([200, 404, 503]).toContain(shared.status());
 
     for (const [path, title, file] of [
       ["/internal/admin", "Overview", "admin-overview"],
@@ -359,7 +361,6 @@ for (const width of WIDTHS) {
     for (const [id, file] of [
       ["#leads-interest", "menu-leads-interest"],
       ["#leads-source", "menu-leads-source"],
-      ["#leads-status", "menu-leads-status"],
     ] as const) {
       await openList(page, id, `${width} ${id}`, width, file);
     }

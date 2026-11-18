@@ -43,7 +43,7 @@ export function ToolScores({ models, context }: { models: OverviewView["models"]
               <span className="block h-full rounded-full bg-primary" style={{ width: `${Math.max(m.score ?? 0, m.score ? 2 : 0)}%` }} />
             </span>
             <span className="text-xs text-muted-foreground">
-              {context[m.id] ? `Competitors: ${context[m.id]}` : "No competitor scores yet"}
+              {context[m.id] ? `Top competitors: ${context[m.id]}` : "No competitor scores yet"}
             </span>
           </li>
         ))}

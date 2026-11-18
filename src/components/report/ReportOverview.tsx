@@ -53,7 +53,7 @@ export function ReportOverview({ report, saved }: { report: ShownReport; saved: 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-5 border-y border-border py-5 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-border">
         <Stat label="Visibility score" value={`${score.value}/100`} sub={change} testId="fact-score" />
         <Stat label="Answers naming you" value={`${named.answers} of ${named.total}`} sub={`In ${named.questions} of ${named.questionsAsked} questions`} testId="fact-named" />
-        <Stat label={rank ? `Rank among ${rank.of} tracked` : "Rank among tracked"} value={rank ? `#${rank.position}` : "None"} sub={rankSub} testId="fact-rank" />
+        <Stat label={rank ? `Rank among ${rank.of} tracked` : "Rank among tracked"} value={rank ? `#${rank.position}` : "Unranked"} sub={rankSub} testId="fact-rank" />
         {/* The report's own fixes only; Actions also holds the scan's and hand-added fixes, so its count is larger (QA round 2). */}
         <Stat label="Fixes in this report" value={String(report.fixes.length)} sub="Each is also in Actions, with your other fixes" testId="fact-fixes" />
       </dl>

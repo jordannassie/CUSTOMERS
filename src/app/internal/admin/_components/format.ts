@@ -26,10 +26,13 @@ export function money(value: number | null): string {
   return value.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-/** A price for one check or one credit, where fractions of a cent matter: "$0.0042", "$0.0900". */
+/**
+ * A price for one check or one credit, where fractions of a cent matter: "$0.0042", but "$0.09" rather than "$0.0900"
+ * (BUG-325, WRITING.md: money with no trailing zeros).
+ */
 export function unitPrice(value: number | null): string {
   if (value === null) return "";
-  return value.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 });
+  return value.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4 });
 }
 
 /** "1 agency", "3 agencies": the count with the right word. */

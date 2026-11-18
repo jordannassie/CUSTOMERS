@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
-import { CircleHelp } from "lucide-react";
 import { cn } from "cn";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { HelpTip } from "@/components/ui/help-tip";
 
 /**
  * A white card with a header row (mockup-ui): the title with a small help icon, controls on the right, a hairline,
@@ -54,20 +53,5 @@ export function CardHead({ title, help, actions, className }: { title: ReactNode
 }
 
 export function Help({ text }: { text: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          className="-m-1 inline-flex size-6 items-center justify-center rounded-full text-text-hint outline-none hover:text-muted-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
-          aria-label={`About this: ${text}`}
-        >
-          <CircleHelp className="size-3.5" aria-hidden="true" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-72 font-normal">
-        {text}
-      </TooltipContent>
-    </Tooltip>
-  );
+  return <HelpTip label={`About this: ${text}`} text={text} />;
 }

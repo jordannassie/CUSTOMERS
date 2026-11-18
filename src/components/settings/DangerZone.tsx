@@ -52,7 +52,7 @@ export function DangerZone({ businesses, activeBusinessId, agencyName, waitDays,
                     <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
                       <span className="break-words">{business.name}</span>
                       {business.id === activeBusinessId && (
-                        <span className="rounded-sm bg-primary-tint px-1.5 text-[length:calc(11px*var(--px,1))] leading-5 font-medium text-primary-hover">Open now</span>
+                        <span className="rounded-sm bg-primary-tint px-1.5 text-[length:calc(11px*var(--px,1))] leading-5 font-medium text-primary-hover">Viewing</span>
                       )}
                     </p>
                     {business.domain && <p className="truncate text-[length:calc(12.5px*var(--px,1))] text-muted-foreground">{business.domain}</p>}
@@ -66,13 +66,13 @@ export function DangerZone({ businesses, activeBusinessId, agencyName, waitDays,
             confirmLabel="Delete business"
             pendingLabel="Deleting…"
             steps={[
-              { when: "Now", what: "AI checks stop, its share links stop working and it leaves your dashboard." },
+              // One "Now" step during a trial: two in a row read like a mistake (BUG-320).
               trialing
-                ? { when: "Now", what: "It leaves your trial now and you won't be charged for it." }
-                : {
-                    when: "End of this billing period",
-                    what: "Its plan ends and you are not charged for it again. There is no refund for the days left.",
-                  },
+                ? { when: "Now", what: "AI checks stop, its share links stop working, and it leaves your dashboard and your trial. You won't be charged for it." }
+                : { when: "Now", what: "AI checks stop, its share links stop working and it leaves your dashboard." },
+              ...(trialing
+                ? []
+                : [{ when: "End of this billing period", what: "Its plan ends and you are not charged for it again. There is no refund for the days left." }]),
               ...(trialing ? [{ when: "Your trial", what: `It still counts toward the ${trialLimit} businesses your free trial allows.` }] : []),
               { when: removedOn, what: "Its questions, results and reports are removed for good. Until then, contact us to undo this." },
             ]}

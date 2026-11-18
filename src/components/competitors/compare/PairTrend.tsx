@@ -2,7 +2,7 @@
 
 import { Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
-import { axisTicks, axisTop } from "@/lib/chart-scale";
+import { axisTicks, axisTop, percentTick } from "@/lib/chart-scale";
 import { FirstScanBars } from "@/components/overview/FirstScanBars";
 import type { PairPoint } from "@/modules/competitors";
 
@@ -81,7 +81,7 @@ export function Trend({
             </defs>
             <CartesianGrid vertical={false} />
             <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={6} interval="preserveStartEnd" minTickGap={24} />
-            <YAxis domain={[0, top]} ticks={axisTicks(top)} tickLine={false} axisLine={false} width={32} allowDataOverflow />
+            <YAxis domain={[0, top]} ticks={axisTicks(top)} tickFormatter={percentTick} tickLine={false} axisLine={false} width={38} allowDataOverflow />
             <ChartTooltip cursor={{ stroke: "var(--border)" }} content={<PairTooltip name={name} />} />
             <Area dataKey="you" type="monotone" fill="url(#pair-you-fill)" stroke="none" connectNulls isAnimationActive={false} tooltipType="none" />
             <Line dataKey="youRolling" type="monotone" stroke="var(--chart-1)" strokeWidth={1.5} strokeDasharray="5 5" strokeOpacity={0.7} dot={false} activeDot={false} connectNulls isAnimationActive={false} />

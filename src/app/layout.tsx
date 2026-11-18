@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import React from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { NavigationProgress } from "@/components/ui/navigation-progress";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DEV_MEASURE_GUARD } from "@/lib/dev/measure-guard";
 import { env } from "@/lib/env";
@@ -61,6 +63,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-full flex flex-col">
+        {/* Feedback while the next page loads after a link click (BUG-307, BUG-326). It reads the address, so it waits in its own boundary. */}
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         <TooltipProvider>{children}</TooltipProvider>
         <Toaster />
       </body>

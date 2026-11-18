@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts";
 import { cn } from "cn";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
-import { axisTicks, axisTop } from "@/lib/chart-scale";
+import { axisTicks, axisTop, percentTick } from "@/lib/chart-scale";
 import type { OverviewCompete } from "@/modules/competitors/overview";
 import { colorAt } from "@/lib/series-colors";
 import { FirstScanBars } from "./FirstScanBars";
@@ -112,7 +112,7 @@ export function ScanChart({
           </defs>
           <CartesianGrid vertical={false} />
           <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" minTickGap={24} />
-          <YAxis domain={[0, top]} ticks={axisTicks(top)} tickLine={false} axisLine={false} width={32} allowDataOverflow />
+          <YAxis domain={[0, top]} ticks={axisTicks(top)} tickFormatter={percentTick} tickLine={false} axisLine={false} width={38} allowDataOverflow />
           <ChartTooltip cursor={{ stroke: "var(--border)" }} content={<Tip lines={shown} all={lines} />} />
           {!hidden.has("s0") && <Area dataKey="s0" type="monotone" fill="url(#overview-you-fill)" stroke="none" connectNulls isAnimationActive={false} tooltipType="none" fillOpacity={opacity("s0")} />}
           <Line dataKey="rolling" type="monotone" stroke="var(--chart-1)" strokeWidth={1.5} strokeDasharray="5 5" strokeOpacity={0.6 * opacity("s0")} dot={false} activeDot={false} connectNulls isAnimationActive={false} />

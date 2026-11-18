@@ -152,3 +152,11 @@ describe("shortBalance", () => {
     expect(shortBalance(-31)).toEqual({ text: "31 over", empty: true });
   });
 });
+
+describe("trial banner for a test agency (BUG-304)", () => {
+  it("counts admin credits and never promises a card charge", () => {
+    const [testBanner, trialBanner] = pickBanners(usage({ balance: 135, topupRemaining: 0, periodCredits: 0, periodUsed: 15 }), { ...trial, isTest: true }, now);
+    expect(testBanner.kind).toBe("test_mode");
+    expect(trialBanner.message).toBe("Your free trial has 5 days and 135 credits left. This is a test account, so nothing is charged.");
+  });
+});

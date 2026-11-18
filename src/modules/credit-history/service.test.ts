@@ -82,3 +82,12 @@ describe("historyPage", () => {
     expect(historyPage(entries, Number.NaN).page).toBe(1);
   });
 });
+
+describe("test account credits (BUG-325)", () => {
+  it("names the grant an agency gets when marked as a test account, as admin does", () => {
+    const rows: LedgerRow[] = [{ id: "g1", kind: "grant", delta: 150, createdAt: "2026-11-17T10:00:00Z", source: "admin", sourceId: "test_agency_start:abc", business: null }];
+    expect(buildHistory(rows, [])[0]).toMatchObject({ kind: "support", label: "Test account credits", delta: 150 });
+    const other: LedgerRow[] = [{ ...rows[0], sourceId: "manual-1" }];
+    expect(buildHistory(other, [])[0].label).toBe("Added by support");
+  });
+});

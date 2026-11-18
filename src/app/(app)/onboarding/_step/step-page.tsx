@@ -1,8 +1,9 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { WizardFrame, type FrameStep } from "@/components/onboarding/WizardFrame";
-import { canOpen, getWizardState, resumeStep, stepPath, visibleSteps, type StepSlug, type WizardContext } from "@/modules/onboarding";
+import { canOpen, getAddBusinessBlock, getWizardState, resumeStep, stepPath, visibleSteps, type StepSlug, type WizardContext } from "@/modules/onboarding";
 import { StepContent, StepSkeleton, TITLES } from "./step-content";
+import { UpgradeNote } from "./upgrade-note";
 
 export const stepMetadata = { title: "Set up", robots: { index: false } };
 
@@ -16,6 +17,19 @@ export type StepSearchParams = Promise<{ plan?: string; session_id?: string }>;
 export async function OnboardingStep({ step, searchParams }: { step: StepSlug; searchParams: StepSearchParams }) {
   const state = await getWizardState(stepPath(step));
   if (!canOpen(step, state)) redirect(stepPath(resumeStep(state) ?? "website"));
+
+  // Adding a business past the trial's limit: just the note, without "Step 1 of 5" and "Start with its website"
+  // above a page that says it can't be done (BUG-321).
+  if (step === "website" && !state.draft?.id && state.hasFinishedBusiness) {
+    const blocked = await getAddBusinessBlock(stepPath(step));
+    if (blocked) {
+      return (
+        <WizardFrame steps={[]} title="Add another business" embedded>
+          <UpgradeNote reason={blocked} hasBusinesses />
+        </WizardFrame>
+      );
+    }
+  }
 
   const { plan, session_id: sessionId } = await searchParams;
   const { title, lead } = TITLES[step];

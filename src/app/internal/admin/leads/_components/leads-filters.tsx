@@ -92,14 +92,6 @@ export function LeadsFilters({
         onChange={(v) => onFilter("source", v)}
       />
       <FilterSelect
-        id="leads-status"
-        label="Status"
-        value={view.status}
-        allLabel="All statuses"
-        options={options.status}
-        onChange={(v) => onFilter("status", v)}
-      />
-      <FilterSelect
         id="leads-replied"
         label="Replied"
         value={view.replied}

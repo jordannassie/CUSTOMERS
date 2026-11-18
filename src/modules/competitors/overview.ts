@@ -123,7 +123,7 @@ export function overviewCompete(view: CompetitorsView, report: ScoreReport, stan
       .filter((x): x is { name: string; score: number } => x.score !== null && x.score !== undefined)
       .sort((a, b) => b.score - a.score)
       .slice(0, 2);
-    if (named.length > 0) modelContext[m.model] = named.map((x) => `${x.name} ${x.score}`).join(" · ");
+    if (named.length > 0) modelContext[m.model] = named.map((x) => `${x.name} ${x.score}%`).join(" · ");
   }
   const period = charts?.period
     ? { days: charts.period.days, answers: charts.period.answers, named: charts.period.named[0], prevAnswers: charts.period.prevAnswers, prevNamed: charts.period.prevNamed[0] }

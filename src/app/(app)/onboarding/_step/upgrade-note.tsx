@@ -23,7 +23,7 @@ export function UpgradeNote({ reason, hasBusinesses, draftSaved = false }: { rea
           <Link href={NEW_BUSINESS_PLAN_HREF}>See plans</Link>
         </Button>
         <Button asChild variant="ghost">
-          {hasBusinesses ? <Link href="/dashboard">Back to dashboard</Link> : <Link href="/settings">Go to settings</Link>}
+          {hasBusinesses ? <Link href="/dashboard">Back to Overview</Link> : <Link href="/settings">Go to settings</Link>}
         </Button>
       </div>
     </div>

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import { userAgent } from "next/server";
 import { AddActionDialog } from "@/components/actions/AddActionDialog";
 import { ActionsBoard } from "@/components/actions/ActionsBoard";
 import { OpenCount } from "@/components/actions/OpenCount";
@@ -113,10 +115,17 @@ export default async function ActionsPage({ searchParams }: { searchParams: Prom
           add={add}
           siteDomain={business.domain}
           readOnly={readOnly}
+          phoneHint={await isPhoneRequest()}
         >
           {intro}
         </ActionsBoard>
       )}
     </PageContainer>
   );
+}
+
+/** A phone, from the user agent or Chrome's mobile hint: Actions opens on the List there (BUG-315). */
+async function isPhoneRequest(): Promise<boolean> {
+  const h = await headers();
+  return h.get("sec-ch-ua-mobile") === "?1" || userAgent({ headers: h }).device.type === "mobile";
 }

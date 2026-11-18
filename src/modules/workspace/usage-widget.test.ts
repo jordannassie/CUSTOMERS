@@ -133,3 +133,11 @@ describe("usageWidget", () => {
     expect(usageWidget(usage({}), { ...active, periodEndsAt: inDays(5.4) }, now).details).toEqual(["Renews in 5 days"]);
   });
 });
+
+describe("usageWidget, a trial with no trial grant (BUG-304)", () => {
+  it("counts what is left instead of '0 of 0' when the credits came from an admin (test agencies)", () => {
+    const view = usageWidget(usage({ balance: 135, topupRemaining: 0, periodCredits: 0, periodUsed: 0 }), { ...trial, isTest: true }, now);
+    expect(view.headline).toBe("Trial: 5 days left, 135 credits left");
+    expect(view.headline).not.toContain("0 of 0");
+  });
+});

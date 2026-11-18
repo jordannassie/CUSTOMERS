@@ -42,11 +42,12 @@ export function TopActions({ items, total, wait = null }: { items: ActionItem[];
                   <Icon className="size-3.5" />
                 </span>
                 <span className="flex min-w-0 flex-col gap-0.5">
-                  <Link href={fixHref(a.id)} className="block min-h-6 truncate py-0.5 text-[length:calc(13px*var(--px,1))] font-medium hover:underline">
+                  <Link href={fixHref(a.id)} className="line-clamp-2 min-h-6 py-0.5 text-[length:calc(13px*var(--px,1))] font-medium hover:underline">
                     {a.title}
                   </Link>
                   <span className="truncate text-xs text-muted-foreground" title={why ?? undefined}>
-                    Apply on {a.whereToApply}
+                    {/* Mid-sentence: "Apply on your website", not "Your website" (BUG-308). */}
+                    Apply on {a.whereToApply.replace(/^Your /, "your ")}
                     {why ? ` · ${why}` : ""}
                   </span>
                 </span>

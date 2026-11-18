@@ -17,7 +17,7 @@ const blankToNull = (v: unknown) => (typeof v === "string" && v.trim() === "" ? 
 
 /** The agency's report branding (agencies.report_branding, D-90); a blank field clears it. */
 export const reportBrandingInput = z.object({
-  accent: z.preprocess(blankToNull, z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Use a colour like #1F4FD1.").nullable()),
+  accent: z.preprocess(blankToNull, z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Use a color like #1F4FD1.").nullable()),
   contactEmail: z.preprocess(blankToNull, z.email("Enter an email address like you@agency.com.").max(200).nullable()),
   bookingUrl: z.preprocess(
     blankToNull,

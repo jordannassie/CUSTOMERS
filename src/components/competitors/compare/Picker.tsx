@@ -14,7 +14,8 @@ const BADGE = { ahead: PILL_VARIANT.plain, behind: PILL_VARIANT.attention, about
 export function Picker({ page, tab, track }: { page: ComparePage; tab: string; track: TrackAction }) {
   const selected = page.selected;
   const subtitle = selected
-    ? [selected.panel.why.site, `named in ${selected.panel.why.them} of ${selected.panel.why.answers} answers`].filter(Boolean).join(" · ")
+    ? // Before any answer "named in 0 of 0 answers" said nothing useful (BUG-311).
+      [selected.panel.why.site, selected.panel.why.answers > 0 ? `named in ${selected.panel.why.them} of ${selected.panel.why.answers} answers` : "No answers yet"].filter(Boolean).join(" · ")
     : null;
   return (
     <section className="flex flex-col overflow-hidden rounded-lg border border-border bg-card" data-testid="compare-picker">
@@ -41,7 +42,10 @@ export function Picker({ page, tab, track }: { page: ComparePage; tab: string; t
               >
                 <span className="size-2 shrink-0 rounded-full" style={{ background: o.color }} aria-hidden="true" />
                 <span className="max-w-48 truncate">{o.name}</span>
-                <span className={cn("rounded-sm px-1 text-xs tabular-nums", on ? "bg-surface text-primary" : "bg-muted text-muted-foreground")}>{o.score ?? "None"}</span>
+                {/* Labelled, and left out before a score exists, instead of a bare "0" or "None" (BUG-311). */}
+                {o.score !== null && o.score !== undefined && (
+                  <span className={cn("rounded-sm px-1 text-xs tabular-nums", on ? "bg-surface text-primary" : "bg-muted text-muted-foreground")}>Score {o.score}</span>
+                )}
               </ChipLink>
             );
           })}
