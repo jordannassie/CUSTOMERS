@@ -12,7 +12,8 @@ import { CHART_DAYS, chainNames, fetchPlaceSignals, loadCompetitorsBase } from "
 import type { LeaderRow, SignalRow } from "../service";
 import { buildWhyPanels, loadWhyInputs } from "../why/dal";
 import type { WhyPanel } from "../why/service";
-import { leadCards, reasonCards, type LeadCard, type ReasonCard } from "./cards";
+import { leadCards, mergeAiCards, reasonCards, type LeadCard, type ReasonCard } from "./cards";
+import { momentumLine, questionsLine, sitesLine, themeRows, type ThemeRow } from "./summaries";
 import { pickerOptions, rowFor, type CompareOption } from "./options";
 
 export type { CompareOption } from "./options";
@@ -40,6 +41,9 @@ export type Comparison = {
   trend: PairPoint[];
   /** The trend's only scan day is the business's first scan (bars labelled "First scan"). */
   firstScan: boolean;
+  /** One-line headlines for the tabs: the question tally, the question themes, the sites that favour them, and how
+   * the two of you moved over the scans. Null when there is not enough to say. */
+  headlines: { questions: string | null; themes: ThemeRow[] | null; sites: string | null; momentum: string | null };
   /** Asks Google for the two of you, for this view only: called only after "Show Google details" (2026-10-27). */
   loadSignals: () => Promise<SignalRow[]>;
 };
@@ -86,12 +90,14 @@ export async function getComparePage(businessId: string, competitorId: string | 
   const row = rowFor(view.leaderboard, panel.trackedName);
   const you = view.leaderboard.find((r) => r.isYou) ?? null;
   const ownDomain = inputs.data.you.domain ? hostOf(inputs.data.you.domain) : null;
+  const title = row ? rowName(row) : panel.why.name;
+  const trend = pairTimeline(base.report, row?.name ?? panel.trackedName);
   return {
     ...page,
     selected: {
       businessId,
       businessName: view.businessName,
-      title: row ? rowName(row) : panel.why.name,
+      title,
       note: row ? trackedNote(row) : null,
       branch: panel.trackedName,
       standing: row?.standing ?? null,
@@ -99,10 +105,19 @@ export async function getComparePage(businessId: string, competitorId: string | 
       color: competitorColor(order, row?.name ?? panel.trackedName),
       scores: { you: you?.score ?? null, them: row?.score ?? null, margin: view.margin },
       panel,
-      cards: reasonCards(panel.why.allReasons, { id: panel.competitorId, name: panel.why.name, tracked: panel.trackedName }, ownDomain, panel.fixRefs),
+      cards: mergeAiCards(
+        reasonCards(panel.why.allReasons, { id: panel.competitorId, name: panel.why.name, tracked: panel.trackedName }, ownDomain, panel.fixRefs),
+        panel.why.assistants,
+      ),
       leads: leadCards(panel.why.allLeads),
-      trend: pairTimeline(base.report, row?.name ?? panel.trackedName),
+      trend,
       firstScan: isFirstScan(base.report),
+      headlines: {
+        questions: questionsLine(panel.why.allQuestions),
+        themes: themeRows(panel.why.allQuestions),
+        sites: sitesLine(panel.why.domains, panel.why.name),
+        momentum: momentumLine(trend, title),
+      },
       // Only the two places on this page are looked up, live, for this view only (D-73).
       loadSignals: () => base.signals(fetchPlaceSignals, panel.competitorId),
     },

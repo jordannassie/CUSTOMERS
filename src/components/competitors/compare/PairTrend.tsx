@@ -14,6 +14,7 @@ export function Trend({
   color = "var(--chart-2)",
   firstScan = false,
   nextScan = null,
+  momentum = null,
 }: {
   name: string;
   trend: PairPoint[];
@@ -22,6 +23,8 @@ export function Trend({
   firstScan?: boolean;
   /** The next scheduled scan's day, "Nov 6", for the one-scan note. */
   nextScan?: string | null;
+  /** "Since Nov 3, Bean House's 30-day score went from 20% to 38%, and yours stayed at 0%." (2026-11-18). */
+  momentum?: string | null;
 }) {
   const one = trend.length === 1;
   const top = axisTop(trend.flatMap((p) => [p.you, p.them, p.youRolling, p.themRolling]));
@@ -89,6 +92,11 @@ export function Trend({
             <Line dataKey="you" type="monotone" stroke="var(--chart-1)" strokeWidth={2.5} dot={{ r: 3, strokeWidth: 0, fill: "var(--chart-1)" }} connectNulls isAnimationActive={false} />
           </ComposedChart>
         </ChartContainer>
+      )}
+      {momentum && (
+        <p className="text-xs text-muted-foreground" data-testid="pair-momentum">
+          {momentum}
+        </p>
       )}
       <figcaption className="sr-only">
         {trend.map((p) => `${p.label}: you ${p.you ?? "no checks"}, ${name} ${p.them ?? "no checks"}`).join("; ")}. Each point is the share of that scan&apos;s answers that named each of you.

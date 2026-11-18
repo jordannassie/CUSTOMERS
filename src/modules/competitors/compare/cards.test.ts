@@ -98,3 +98,27 @@ describe("googleReasonCards", () => {
     expect(googleReasonCards([reviews], who, fixes)[0].fix).toBeNull();
   });
 });
+
+describe("mergeAiCards (owner, 2026-11-18)", () => {
+  it("puts the AI tools' reasons in one card, where the first was, with the strongest step", async () => {
+    const { mergeAiCards } = await import("./cards");
+    const base = { tag: "Website", basis: "", fact: "", whatToDo: "", whereToApply: "", answersHref: "/questions?named=Bean+House&ai=openai", fix: null, action: { title: "", category: "content", evidenceData: {} } };
+    const site = { ...base, key: "site:yelp.com", title: "AI used yelp.com when it picked them", impact: "high" as const, ai: null };
+    const gpt = { ...base, key: "reason:chatgpt", title: "ChatGPT names them more", impact: "medium" as const, whatToDo: "Start with your website.", ai: { provider: "openai", assistant: "ChatGPT" } };
+    const claude = { ...base, key: "reason:claude", title: "Claude names them more", impact: "low" as const, ai: { provider: "anthropic", assistant: "Claude" } };
+    const cards = mergeAiCards([site, gpt, claude], [
+      { assistant: "ChatGPT", answers: 24, them: 8, you: 0 },
+      { assistant: "Claude", answers: 10, them: 2, you: 0 },
+    ]);
+    expect(cards.map((c) => c.title)).toEqual(["AI used yelp.com when it picked them", "ChatGPT and Claude name them more"]);
+    expect(cards[1]).toMatchObject({
+      key: "reason:chatgpt",
+      impact: "medium",
+      basis: "Based on 34 answers",
+      fact: "Named them in 8 of 24 ChatGPT answers and 2 of 10 Claude answers. You weren't named in any of them.",
+      whatToDo: "Start with your website.",
+      answersHref: "/questions?named=Bean+House",
+    });
+    expect(mergeAiCards([site, gpt], [])).toHaveLength(2);
+  });
+});

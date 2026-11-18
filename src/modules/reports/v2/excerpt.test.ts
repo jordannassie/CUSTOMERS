@@ -38,3 +38,14 @@ describe("excerptAround", () => {
     expect(plainAnswer(`Cheezious ${dash} a value pick.`)).toBe("Cheezious, a value pick.");
   });
 });
+
+describe("excerptAround finds the full name before a shortened one (2026-11-18)", () => {
+  it("quotes the line that names Pizza Hut, not an intro line about pizza places", () => {
+    const text = "Here are a few pizza restaurant options people in Rawalpindi often recommend:\n\n1. **Pizza Hut**: a popular local choice with fair prices.\n2. **Domino's Pizza**: quick and reliable.";
+    expect(excerptAround(text, ["Pizza Hut"])).toBe("Pizza Hut: a popular local choice with fair prices.");
+  });
+  it("still finds a shortened name when the full one is nowhere, as a whole word only", () => {
+    expect(excerptAround("Locals love Cheezious for its crown crust.", ["Cheezious Pizza"])).toBe("Locals love Cheezious for its crown crust.");
+    expect(excerptAround("Great pizzas everywhere.", ["Pizza"])).toBeNull();
+  });
+});

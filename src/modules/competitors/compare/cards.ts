@@ -23,6 +23,8 @@ export type ReasonCard = {
   fix: { id: string; status: string } | null;
   /** What "Add to Actions" saves. */
   action: { title: string; category: string; evidenceData: { [key: string]: string | number | null } };
+  /** One AI tool's reason ("ChatGPT names them more"): Compare shows these together in "Which AI picks them". */
+  ai: { provider: string | null; assistant: string } | null;
 };
 
 export type LeadCard = { title: string; fact: string };
@@ -141,6 +143,7 @@ export function reasonCards(
       impact: impactOf(f.weight),
       answersHref: answersHref(f, competitor.tracked ?? competitor.name),
       fix: f.fixId && status ? { id: f.fixId, status } : null,
+      ai: f.assistant ? { provider: f.provider ?? null, assistant: f.assistant } : null,
       action: {
         title: taskTitle(whatToDo),
         category: categoryOf(f),
@@ -160,4 +163,35 @@ export function googleReasonCards(facts: Fact[], competitor: { id: string; name:
 
 export function leadCards(leads: Fact[]): LeadCard[] {
   return leads.map((f) => ({ title: f.title, fact: f.text }));
+}
+
+const IMPACT_ORDER: Record<Impact, number> = { high: 3, medium: 2, low: 1 };
+
+/**
+ * The AI tools' reasons as one card (owner, 2026-11-18: "ChatGPT names them more", "Claude names them more" and
+ * "Perplexity names them more" read as the same card three times). The counts in one sentence, the strongest tool's
+ * step and its Add to Actions, and a link to all their answers. Placed where the first of them was.
+ */
+export function mergeAiCards(cards: ReasonCard[], tallies: { assistant: string; answers: number; them: number; you: number }[]): ReasonCard[] {
+  const ai = cards.filter((c) => c.ai);
+  if (ai.length < 2) return cards;
+  const strongest = [...ai].sort((a, b) => IMPACT_ORDER[b.impact] - IMPACT_ORDER[a.impact])[0];
+  const named = ai.map((c) => c.ai!.assistant);
+  const rows = named.map((a) => tallies.find((t) => t.assistant === a)).filter((t): t is NonNullable<typeof t> => !!t);
+  const total = rows.reduce((n, t) => n + t.answers, 0);
+  const them = list(rows.map((t) => `${t.them} of ${t.answers} ${t.assistant} answers`));
+  const you = rows.every((t) => t.you === 0) ? "You weren't named in any of them." : `You: ${list(rows.map((t) => `${t.you} on ${t.assistant}`))}.`;
+  const merged: ReasonCard = {
+    ...strongest,
+    tag: "AI answers",
+    basis: `Based on ${answers(total)}`,
+    title: `${list(named)} name them more`,
+    fact: `Named them in ${them}. ${you}`,
+    // All their answers, not one tool's.
+    answersHref: strongest.answersHref?.replace(/([?&])ai=[^&]*&?/, "$1").replace(/[?&]$/, "") ?? null,
+    ai: { provider: null, assistant: list(named) },
+  };
+  const at = cards.indexOf(ai[0]);
+  const rest = cards.filter((c) => !c.ai);
+  return [...rest.slice(0, at), merged, ...rest.slice(at)];
 }

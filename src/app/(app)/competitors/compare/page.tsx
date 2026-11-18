@@ -102,7 +102,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
             <Picker page={page} tab={tab} track={trackCompetitor} />
             <Scorecard
               data={data}
-              trend={<Trend name={data.title} trend={data.trend} color={data.color} firstScan={data.firstScan} nextScan={nextScan} />}
+              trend={<Trend name={data.title} trend={data.trend} color={data.color} firstScan={data.firstScan} nextScan={nextScan} momentum={data.headlines.momentum} />}
             />
             <CompareTabs
               key={data.panel.competitorId}
@@ -117,7 +117,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                         <section className="flex flex-col gap-3">
                           <div className="flex flex-col gap-0.5">
                             <h3 className="text-[length:calc(14px*var(--px,1))] font-semibold tracking-[-0.01em]">{reasonsHeading(data.standing, data.collecting)}</h3>
-                            <p className="text-xs text-muted-foreground">Facts from AI answers in the last 30 days and what we read, biggest first. Each comes with its fix.</p>
+                            <p className="text-xs text-muted-foreground">Last 30 days, biggest first, each with its fix.</p>
                           </div>
                           <ReasonCards
                             name={data.title}
@@ -140,8 +140,8 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                       )}
                     </div>
                   ),
-                questions: <QuestionsTab panel={data.panel} />,
-                sources: <WhereLookedTab panel={data.panel} />,
+                questions: <QuestionsTab panel={data.panel} summary={data.headlines.questions} themes={data.headlines.themes} />,
+                sources: <WhereLookedTab panel={data.panel} summary={data.headlines.sites} />,
                 website: (
                   <WebsitesTab panel={data.panel} businessId={business.id} actions={{ check: checkCompetitorWebsite, save: saveCompetitorWebsite }} />
                 ),
