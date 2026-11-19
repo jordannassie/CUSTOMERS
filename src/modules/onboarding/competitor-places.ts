@@ -111,10 +111,18 @@ export function toPlaceArea(body: unknown): PlaceArea {
   const parsed = components.safeParse(body);
   if (!parsed.success) throw new PlacesError("Places sent an unexpected response");
   const list = parsed.data.addressComponents ?? [];
-  const names = (types: string[]) =>
-    [...new Set(list.filter((c) => c.types?.some((t) => types.includes(t))).flatMap((c) => [c.longText, c.shortText]).filter((n): n is string => !!n?.trim()))];
+  // An untyped part is a town too: Google leaves some UK villages without a type (Holmes Chapel, 2026-11-19).
+  const names = (types: string[], untyped = false) =>
+    [
+      ...new Set(
+        list
+          .filter((c) => c.types?.some((t) => types.includes(t)) || (untyped && !c.types?.length))
+          .flatMap((c) => [c.longText, c.shortText])
+          .filter((n): n is string => !!n?.trim()),
+      ),
+    ];
   const country = list.find((c) => c.types?.includes("country"))?.shortText?.trim().toUpperCase() || null;
-  return { cities: names(CITY_TYPES), regions: names(["administrative_area_level_1"]), country };
+  return { cities: names(CITY_TYPES, true), regions: names(["administrative_area_level_1"]), country };
 }
 
 export function searchBody(textQuery: string, pageSize: number, near: Origin | null | undefined, sameType: boolean, orType?: string | null) {

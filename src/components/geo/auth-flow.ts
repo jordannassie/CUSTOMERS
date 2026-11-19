@@ -34,12 +34,27 @@ export function passwordRefusal(message: string): string {
   return "Use at least 8 characters, with an uppercase letter, a lowercase letter, a number and a symbol.";
 }
 
-export function signupFailure(message: string): AuthFailure {
+/**
+ * A failed sign-up in our words. Supabase's code first, its message as a fallback. Email sending problems got the
+ * general message, so a refused confirmation email (Supabase's built-in sender only mails its own team and a few an
+ * hour) read as "Try again" with nothing to fix (owner, 2026-11-19).
+ */
+export function signupFailure(message: string, code?: string): AuthFailure {
   const msg = message.toLowerCase();
-  if (msg.includes("already registered") || msg.includes("already been registered") || msg.includes("user already")) {
+  if (code === "user_already_exists" || msg.includes("already registered") || msg.includes("already been registered") || msg.includes("user already")) {
     return { error: "An account with this email already exists. Try logging in instead.", invalid: "email" };
   }
-  if (msg.includes("password")) return { passwordError: passwordRefusal(msg) };
+  if (code === "email_address_invalid" || (msg.includes("email") && msg.includes("invalid"))) {
+    return { error: "Enter a valid email address.", invalid: "email" };
+  }
+  if (code === "over_email_send_rate_limit" || code === "over_request_rate_limit" || msg.includes("rate limit") || msg.includes("only request this after")) {
+    return { error: "Too many sign-ups just now. Wait a few minutes, then try again." };
+  }
+  if (code === "email_address_not_authorized" || msg.includes("not authorized") || msg.includes("sending confirmation email") || msg.includes("error sending")) {
+    return { error: "We couldn't send your confirmation email. Try again later, or contact support." };
+  }
+  if (code === "signup_disabled" || msg.includes("signups not allowed")) return { error: "Sign up is closed right now. Contact support." };
+  if (code === "weak_password" || msg.includes("password")) return { passwordError: passwordRefusal(msg) };
   return { error: "We couldn't create your account. Try again." };
 }
 
@@ -79,7 +94,11 @@ export async function signUpWithEmail(email: string, password: string): Promise<
       ...(plan && { data: { selected_plan: plan } }),
     },
   });
-  if (error) return { kind: "failed", failure: signupFailure(error.message) };
+  if (error) {
+    // The code only, never the address: what to look up in Supabase's Auth logs when the general message shows.
+    console.error("[auth] sign up failed:", error.code ?? error.status ?? "unknown");
+    return { kind: "failed", failure: signupFailure(error.message, error.code) };
+  }
   // With email confirmation off, signUp already returns a session. One navigation: the page it opens is read with
   // the new session's cookie, so a refresh after it only fetched the same page again.
   return data.session ? { kind: "signed_in", next: nextFromUrl(true) } : { kind: "confirm" };

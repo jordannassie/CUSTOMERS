@@ -114,6 +114,19 @@ export function createPlaceLookup(apiKey: string, deps: HttpDeps = {}): LookupPl
   };
 }
 
+type AddressPart = { longText?: string | null; types?: string[] | null };
+
+/**
+ * The town a UK address names just before its post town when Google gives that town no type: "Middlewich Road, Holmes
+ * Chapel, Crewe CW4 7ET" has Holmes Chapel untyped and Crewe as postal_town, so the business got Crewe and every
+ * question asked about Crewe, where AI named it in 0 of 22 answers (live, 2026-11-19). Null when there is none.
+ */
+export function untypedTown(parts: AddressPart[] | null | undefined, address: string | null | undefined, postTown: string | null): string | null {
+  if (!postTown || !address) return null;
+  const untyped = (parts ?? []).filter((p) => !p.types?.length && p.longText?.trim()).map((p) => p.longText!.trim());
+  return untyped.find((town) => town !== postTown && address.includes(`${town}, ${postTown}`)) ?? null;
+}
+
 export function toCandidates(body: unknown): PlaceCandidate[] {
   const parsed = searchResponse.safeParse(body);
   if (!parsed.success) throw new PlacesError("Places sent an unexpected response");
@@ -130,7 +143,8 @@ export function toCandidates(body: unknown): PlaceCandidate[] {
       primaryType: p.primaryType || null,
       types: p.types ?? [],
       websiteUri: p.websiteUri || null,
-      city: part("locality") ?? part("postal_town"),
+      // The village or town customers use first; the post town only when the address names nothing smaller.
+      city: part("locality") ?? untypedTown(p.addressComponents, p.formattedAddress, part("postal_town")) ?? part("postal_town"),
       state: part("administrative_area_level_1", true),
       country: part("country", true),
       area: part("neighborhood") ?? part("sublocality_level_1") ?? part("sublocality"),
