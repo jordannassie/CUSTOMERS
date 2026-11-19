@@ -234,7 +234,8 @@ test("Run scan: the score appears when the scan finishes, without a reload", asy
   await expect(page.getByRole("button", { name: /Scanning/ })).toBeVisible();
   await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 60_000 });
   await expect(page.getByTestId("no-score")).toHaveCount(0);
-  await expect(page.getByTestId("last-scan")).toHaveText(/ · Last scan [A-Z][a-z]{2} \d{1,2}$/);
+  // Each part keeps its words together with no-break spaces (BUG-308), so \s, not a plain space.
+  await expect(page.getByTestId("last-scan")).toHaveText(/ · Last\sscan\s[A-Z][a-z]{2}\s\d{1,2}$/);
   // The report and its share link live on Reports (D-86); the Overview header links there.
   await expect(page.getByRole("link", { name: "View report" })).toHaveAttribute("href", "/reports");
   await expect(page.getByRole("link", { name: "Share" })).toHaveAttribute("href", "/reports?share=1");

@@ -148,7 +148,7 @@ test("cited sites: most cited first, with kind, how often, who used it and the o
   await expect(rows.filter({ hasText: "dailygrindcoffee.example" }).getByTestId("site-kind")).toHaveText("Business site");
   await expect(rows.filter({ hasText: "beantherecoffee.example" }).getByTestId("site-kind")).toHaveText("Your website");
 
-  await expect(page.getByTestId("source-types")).toContainText(/Reviews and forums\s*3 of 5 answers/);
+  await expect(page.getByTestId("source-types")).toContainText(/Reviews and forums\s*60%\s*3 of 5 answers/);
   await shot(page, info, "sources");
   // Plain wording (MVP_SPEC 8.4).
   await expect(page.getByText(/UGC|citation rate/i)).toHaveCount(0);

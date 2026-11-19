@@ -139,7 +139,7 @@ test("usage widget: trial", async ({ page }) => {
   // Trial days left are in the alert bell, not a bar (owner, 2026-11-17).
   await expect(page.getByTestId("app-banners")).toHaveCount(0);
   await page.getByTestId("alert-bell").filter({ visible: true }).click();
-  await expect(page.getByTestId("alert-bell-menu")).toContainText("Your free trial has 5 days and 64 trial credits left. Your card will be charged on");
+  await expect(page.getByTestId("alert-bell-menu")).toContainText("Your free trial has 5 days and 64 trial credits left. This is a test account, so nothing is charged.");
   await page.keyboard.press("Escape");
   const widget = (await openNav(page)).getByTestId("usage-widget");
   await expect(widget).toContainText("Trial: 5 days left, 64 of 100 credits left");

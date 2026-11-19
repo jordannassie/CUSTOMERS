@@ -30,6 +30,8 @@ type Seed = {
   endsInDays?: number;
   /** A trial grant, as the first invoice.paid gives it (B-42, B-45). */
   trialCredits?: number;
+  /** false: a real customer's wording ("Your card will be charged on"); a test agency is told nothing is charged. */
+  isTest?: boolean;
 };
 
 /** An agency with a fixture subscription and these businesses, logged in on /settings/billing. */
@@ -46,7 +48,7 @@ async function logIn(page: Page, seed: Seed): Promise<{ ends: string; userId: st
     .insert({
       owner_user_id: user.user.id,
       name: "Billing test agency",
-      is_test: true,
+      is_test: seed.isTest ?? true,
       status: seed.status,
       stripe_customer_id: withSub ? `cus_e2e_${randomUUID()}` : null,
       stripe_subscription_id: withSub ? `sub_e2e_${randomUUID()}` : null,
@@ -306,6 +308,7 @@ test("trial notice in the alert bell: days, credits and the charge date, then no
     endsInDays: 5,
     trialCredits: 100,
     businesses: [{ name: "Northside Plumbing", planId: "starter" }],
+    isTest: false,
   });
   // The trial notice is in the alert bell, not a bar (owner, 2026-11-17).
   const bell = page.getByTestId("alert-bell").filter({ visible: true });

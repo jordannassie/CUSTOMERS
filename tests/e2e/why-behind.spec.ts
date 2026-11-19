@@ -543,7 +543,8 @@ test("Check their website: on Compare's Website tab only, read once, compared si
     timeout: 60_000,
   });
   await expect(page.getByTestId("compare-tab-website")).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("link", { name: "Check their website" })).toHaveAttribute("href", `/competitors/compare?with=${bean}`);
+  // One "Check their website", on the Website tab; the header only links to their site (BUG-311).
+  await expect(page.getByRole("link", { name: "Check their website" })).toHaveCount(0);
   const tab = page.getByTestId("tab-websites");
   // Found from the AI answers that cited it, so the owner only presses the button.
   await expect(tab.getByTestId("check-website")).toContainText("beanhouse.example", { timeout: 60_000 });
@@ -631,7 +632,7 @@ test("Compare's Website tab says what is known of each competitor's website, and
   // Found from the AI answers that cited it, not checked yet: the header offers the scan.
   await page.goto(`/competitors/compare?with=${bean}&tab=website`);
   await expect(page.getByTestId("tab-websites").getByTestId("check-website")).toContainText("beanhouse.example", { timeout: 60_000 });
-  await expect(page.getByRole("link", { name: "Check their website" })).toBeVisible();
+  await expect(page.getByTestId("tab-websites").getByTestId("check-website-button")).toBeVisible();
   // No website known yet: the tab asks for it. Old links to the Websites tab land here too.
   await page.goto(`/competitors/${grind}?tab=websites`);
   await page.waitForURL((url) => url.pathname === "/competitors/compare" && url.searchParams.get("with") === grind, { timeout: 60_000 });
