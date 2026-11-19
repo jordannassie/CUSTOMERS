@@ -16,6 +16,18 @@ describe("sign-up failures", () => {
       passwordError: "That password has shown up in data leaks, so it isn't safe. Choose a different one.",
     });
   });
+  it("says when the confirmation email could not be sent or sign-ups are rate limited (2026-11-19)", () => {
+    const notSent = { error: "We couldn't send your confirmation email. Try again later, or contact support." };
+    expect(signupFailure("Error sending confirmation email")).toEqual(notSent);
+    expect(signupFailure('Email address "a@b.com" cannot be used as it is not authorized', "email_address_not_authorized")).toEqual(notSent);
+    const tooMany = { error: "Too many sign-ups just now. Wait a few minutes, then try again." };
+    expect(signupFailure("email rate limit exceeded", "over_email_send_rate_limit")).toEqual(tooMany);
+    expect(signupFailure("For security purposes, you can only request this after 42 seconds.")).toEqual(tooMany);
+  });
+  it("marks an email Supabase calls invalid, and says when sign-up is closed", () => {
+    expect(signupFailure('Email address "x@y" is invalid', "email_address_invalid")).toEqual({ error: "Enter a valid email address.", invalid: "email" });
+    expect(signupFailure("Signups not allowed for this instance", "signup_disabled")).toEqual({ error: "Sign up is closed right now. Contact support." });
+  });
   it("falls back to a general message", () => {
     expect(signupFailure("network down")).toEqual({ error: "We couldn't create your account. Try again." });
   });

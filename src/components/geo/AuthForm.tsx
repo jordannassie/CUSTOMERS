@@ -1,7 +1,6 @@
 "use client";
 
 import { passwordError as passwordRuleError } from "@/lib/password-rules";
-import { PasswordChecklist } from "@/components/ui/password-checklist";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -180,8 +179,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
               }}
               error={passwordError}
               invalid={passwordInvalid}
-              aria-describedby={[passwordInvalid ? alertId : null, isSignup ? "password-rules" : null].filter(Boolean).join(" ") || undefined}
-              below={isSignup ? <PasswordChecklist id="password-rules" value={password} /> : null}
+              aria-describedby={passwordInvalid ? alertId : undefined}
               aside={
                 !isSignup && (
                   <Link href="/forgot-password" prefetch={false} className={authLinkClass}>

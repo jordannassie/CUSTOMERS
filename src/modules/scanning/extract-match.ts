@@ -25,6 +25,12 @@ export function alsoRecommended(matched: MatchedName[]): MatchedName[] {
   return matched.filter((m) => m.matches === null);
 }
 
+/** True when the name, without spaces, is the whole first label of the business's web address and long enough to be its own. */
+function isDomainName(core: string, domain: string): boolean {
+  const compact = core.replace(/[^a-z0-9]/g, "");
+  return compact.length >= 6 && compact === domain.split(".")[0]!.replace(/[^a-z0-9]/g, "");
+}
+
 export function isSameBusiness(extractedName: string, target: MentionTarget): boolean {
   const got = coreName(extractedName);
   if (!got) return false;
@@ -39,6 +45,9 @@ export function isSameBusiness(extractedName: string, target: MentionTarget): bo
   }
   const domain = domainOf(target.website);
   if (domain && findDomain(extractedName, domain).length > 0) return true;
+  // The web address as words: "Autolink Services" for autolinkservices.co.uk was not counted as Autolink Motor Repair
+  // Services Ltd (live, 2026-11-19). Only the whole first label, so a short generic name never matches.
+  if (domain && isDomainName(got, domain)) return true;
 
   for (const known of [target.name, ...brandForms(target), ...(target.aliases ?? [])]) {
     const want = coreName(known);
