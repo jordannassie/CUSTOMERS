@@ -1,0 +1,180 @@
+import type { ReactNode } from "react";
+import Link from "next/link";
+import { ArrowDown, ArrowUp, ChevronRight, Equal, FileText, Flag, Globe, MapPin, Share2, Star, type LucideIcon } from "lucide-react";
+import { cn } from "cn";
+import { SiteIcon } from "@/components/app/SiteIcon";
+import { fixHref } from "@/lib/fix-where";
+import type { ActionItem } from "@/modules/opportunities/board/service";
+import type { QuestionTrends } from "@/modules/scanning";
+import { Panel, ROW } from "./Panel";
+import { PILL_BOX, PILL_CLASS } from "@/components/app/pills";
+
+// The Overview's lower cards (mockup-ui), each a short summary with a link to the page that has it all.
+
+const CHIP = PILL_BOX;
+const IMPACT = {
+  high: { text: "High", tone: PILL_CLASS.attention },
+  medium: { text: "Medium", tone: PILL_CLASS.plain },
+  low: { text: "Low", tone: PILL_CLASS.plain },
+} as const;
+const PLACE_ICON: Record<ActionItem["place"], typeof Globe> = { website: Globe, google_listing: MapPin, review_sites: Star, social: Share2, content: FileText };
+
+function Empty({ children }: { children: ReactNode }) {
+  return <p className="px-4 py-6 text-[length:calc(13px*var(--px,1))] text-muted-foreground">{children}</p>;
+}
+
+/** "Top actions": the most important open fixes, each with where to apply it. */
+export function TopActions({ items, total, wait = null }: { items: ActionItem[]; total: number; wait?: ReactNode }) {
+  return (
+    <Panel title="Top actions" link={total > 0 ? { href: "/actions", text: `All ${total} actions` } : undefined} testId="top-opportunities">
+      {/* Between a finished scan and its saved fixes (MVP_SPEC 7.2), as on Actions. */}
+      {wait && <div className="border-b border-border/60 px-4 py-3">{wait}</div>}
+      {items.length === 0 && wait ? null : items.length === 0 ? (
+        <Empty>No open actions. New ones come from your scans, or from Compare.</Empty>
+      ) : (
+        <ul className="flex flex-col">
+          {items.map((a) => {
+            const Icon = PLACE_ICON[a.place] ?? Globe;
+            const why = a.evidence?.split("\n")[0];
+            return (
+              <li key={a.id} className={cn(ROW, "grid grid-cols-[calc(24px*var(--px,1))_minmax(0,1fr)_auto] items-center gap-3")}>
+                <span className="flex size-6 items-center justify-center rounded-sm bg-muted text-muted-foreground" aria-hidden="true">
+                  <Icon className="size-3.5" />
+                </span>
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <Link href={fixHref(a.id)} className="line-clamp-2 min-h-6 py-0.5 text-[length:calc(13px*var(--px,1))] font-medium hover:underline">
+                    {a.title}
+                  </Link>
+                  <span className="truncate text-xs text-muted-foreground" title={why ?? undefined}>
+                    {/* Mid-sentence: "Apply on your website", not "Your website" (BUG-308). */}
+                    Apply on {a.whereToApply.replace(/^Your /, "your ")}
+                    {why ? ` · ${why}` : ""}
+                  </span>
+                </span>
+                <span className={cn(CHIP, IMPACT[a.impact].tone)}>{IMPACT[a.impact].text}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Panel>
+  );
+}
+
+/** "Questions that moved": up and down since the scan before, by how many answers named you. */
+export function QuestionsMoved({ trends }: { trends: QuestionTrends | null }) {
+  const moved = [...(trends?.better ?? []), ...(trends?.worse ?? [])].slice(0, 4);
+  const day = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return (
+    <Panel title="Questions that moved" right={moved.length > 0 ? "Since the scan before" : undefined} link={{ href: "/questions", text: "All questions" }} testId="questions-moved">
+      {moved.length === 0 ? (
+        <NothingMoved trends={trends} day={day} />
+      ) : (
+        <ul className="flex flex-col">
+          {moved.map((m) => {
+            const up = m.change > 0;
+            return (
+              <li key={m.id} className={cn(ROW, "grid grid-cols-[calc(28px*var(--px,1))_minmax(0,1fr)] items-center gap-3")}>
+                <span className="flex size-7 items-center justify-center rounded-md bg-muted text-foreground">
+                  {up ? <ArrowUp className="size-3.5" aria-hidden="true" /> : <ArrowDown className="size-3.5" aria-hidden="true" />}
+                  <span className="sr-only">{up ? "Up" : "Down"}</span>
+                </span>
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <Link prefetch={false} href={`/questions?q=${m.id}`} className="block min-h-6 truncate py-0.5 text-[length:calc(13px*var(--px,1))] font-medium hover:underline" title={m.prompt}>
+                    {m.prompt}
+                  </Link>
+                  <span className="flex flex-wrap items-center gap-x-1.5 text-xs text-text-hint tabular-nums">
+                    <span>
+                      Named in {m.then.named} of {m.then.checked} on {day(m.thenAt)}
+                    </span>
+                    <ChevronRight className="size-3" aria-hidden="true" />
+                    <span className="font-medium text-foreground">
+                      {m.now.named} of {m.now.checked} now
+                    </span>
+                  </span>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Panel>
+  );
+}
+
+/**
+ * The empty card (owner, 2026-11-16: one grey line looked broken). After one scan it says where things start, with
+ * the first scan's own numbers; once scans can be compared and nothing changed, it says so and since when.
+ */
+function NothingMoved({ trends, day }: { trends: QuestionTrends | null; day: (d: Date) => string }) {
+  const scans = trends?.scans ?? [];
+  const latest = (trends?.rows ?? []).map((r) => r.cells.at(-1)).filter((c) => c != null);
+  const named = latest.filter((c) => c.named > 0).length;
+  if (trends?.comparable) {
+    const before = scans.at(-2);
+    return (
+      <EmptyState icon={Equal} title={before ? `Nothing moved since ${day(before.at)}` : "Nothing moved since your last scan"}>
+        Each question got the same result as last time. When AI starts or stops naming you for one, it shows here.
+      </EmptyState>
+    );
+  }
+  const first = scans.at(-1);
+  return (
+    <EmptyState icon={Flag} title="Your starting point is set">
+      {first && latest.length > 0
+        ? `Your first scan on ${day(first.at)} named you in ${named} of ${latest.length} ${latest.length === 1 ? "question" : "questions"}. `
+        : ""}
+      After your next scan, the questions that went up or down show here.
+    </EmptyState>
+  );
+}
+
+function EmptyState({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-3.5 px-4 py-5" data-testid="questions-moved-empty">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-tint text-primary" aria-hidden="true">
+        <Icon className="size-[18px] stroke-[1.75]" />
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <p className="text-[length:calc(13.5px*var(--px,1))] font-semibold text-foreground">{title}</p>
+        <p className="max-w-[70ch] text-[length:calc(12.5px*var(--px,1))] leading-relaxed text-muted-foreground">{children}</p>
+      </div>
+    </div>
+  );
+}
+
+export type SourceLine = { host: string; answers: number; status: "missing" | "partly" | "named" | "never" };
+// Blue only where AI skipped you; grey for the rest (pills.ts).
+const SOURCE_CHIP = {
+  missing: { text: "Skips you", tone: PILL_CLASS.attention },
+  partly: { text: "Names you sometimes", tone: PILL_CLASS.plain },
+  named: { text: "Names you", tone: PILL_CLASS.plain },
+  never: { text: "Never cited", tone: PILL_CLASS.plain },
+} as const;
+
+/** "Where AI gets its answers": the five sites AI used most, and whether those answers named you. */
+export function WhereAiLooks({ rows }: { rows: SourceLine[] }) {
+  return (
+    <Panel title="Where AI gets its answers" help="The websites AI used most in its answers over the last 30 days, and whether those answers named you." link={{ href: "/sources", text: "All sources" }} testId="where-ai-looks">
+      {rows.length === 0 ? (
+        <Empty>Sites AI used show here after a scan.</Empty>
+      ) : (
+        <ul className="flex flex-col">
+          {rows.map((r) => (
+            <li key={r.host} className={cn(ROW, "grid grid-cols-[calc(24px*var(--px,1))_minmax(0,1fr)_auto] items-center gap-3")}>
+              <SiteIcon domain={r.host} name={r.host} size="sm" />
+              <span className="flex min-w-0 flex-col items-start gap-1">
+                <span className="max-w-full truncate text-[length:calc(13px*var(--px,1))] font-medium">{r.host}</span>
+                <span className={cn(CHIP, SOURCE_CHIP[r.status].tone)}>{SOURCE_CHIP[r.status].text}</span>
+              </span>
+              <span className="flex flex-col items-end text-right">
+                <strong className="text-[length:calc(13.5px*var(--px,1))] font-semibold tabular-nums">{r.answers}</strong>
+                <span className="text-[length:calc(11.5px*var(--px,1))] text-text-hint">{r.answers === 1 ? "answer" : "answers"}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  );
+}

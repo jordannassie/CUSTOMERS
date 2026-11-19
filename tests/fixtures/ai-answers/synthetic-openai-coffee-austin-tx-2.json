@@ -1,0 +1,24 @@
+{
+  "synthetic": true,
+  "provider": "openai",
+  "question": "Where can I find a quiet cafe to work from in Austin, TX?",
+  "answerText": "Here are some well reviewed options in Austin, TX:\n\n1. **Barton Bean**: strong local reviews and friendly staff.\n2. **Eastside Espresso**: convenient hours and easy parking.\n\nCheck current hours before you go.",
+  "citations": [
+    {
+      "url": "https://bartonbean.example/",
+      "title": "Barton Bean"
+    },
+    {
+      "url": "https://eastsideespresso.example/",
+      "title": "Eastside Espresso"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=coffee&find_loc=Austin%2C%20TX",
+      "title": "Top coffee in Austin, TX"
+    }
+  ],
+  "names": [
+    "Barton Bean",
+    "Eastside Espresso"
+  ]
+}

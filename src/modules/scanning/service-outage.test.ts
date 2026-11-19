@@ -1,0 +1,229 @@
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getBalance } from "@/modules/credits";
+import { CHECKS_AT_ONCE, runScan } from "./service";
+import { CLAUDE_OUTAGE_MINUTES, type ClaudeOutage, type OutageReason, type OutageStore } from "./claude-outage/outage";
+import { ProviderError, type ProviderErrorKind } from "./providers/request";
+import type { ProviderId, RunCheck } from "./providers/types";
+import {
+  answeringRunner,
+  blockAiHosts,
+  failingRunner,
+  createScanAgency,
+  createScanBusiness,
+  deleteScanUsers,
+  extractNames,
+  newJob,
+  service,
+} from "./service.test-helpers";
+
+// Claude out of service (claude-outage/outage.ts): after a rejected key or an empty account, scans leave Claude out for
+// a while, hold and charge nothing for it, and try it once when the window is over. Local database, mocked providers,
+// and the outage kept in memory, so these tests never open the shared admin alert other scan tests read. The provider
+// error log is mocked too: a credit error written there makes the Settings status show Anthropic out of credit for
+// every other test running at the same time.
+const recordProviderError = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("./runs/dal", async (importOriginal) => ({ ...(await importOriginal<typeof import("./runs/dal")>()), recordProviderError }));
+
+afterAll(deleteScanUsers);
+
+let aiAttempts: string[];
+beforeEach(() => {
+  aiAttempts = blockAiHosts();
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+  recordProviderError.mockClear();
+  expect(aiAttempts).toEqual([]);
+});
+
+const NOW = new Date();
+const balance = async (agencyId: string) => (await getBalance(agencyId)).balance;
+
+function memoryStore(outage: ClaudeOutage | null = null) {
+  const state = { outage };
+  const store = {
+    read: vi.fn(async () => state.outage),
+    mark: vi.fn(async (reason: OutageReason) => {
+      state.outage = { since: state.outage?.since ?? NOW, lastSeenAt: NOW, reason };
+    }),
+    clear: vi.fn(async () => {
+      state.outage = null;
+    }),
+  } satisfies OutageStore;
+  return { store, state };
+}
+
+const minutesAgo = (m: number) => new Date(NOW.getTime() - m * 60_000);
+const openOutage = (lastSeenMinutesAgo: number, reason: OutageReason = "auth"): ClaudeOutage => ({
+  since: minutesAgo(lastSeenMinutesAgo + 60),
+  lastSeenAt: minutesAgo(lastSeenMinutesAgo),
+  reason,
+});
+
+function claudeFails(status: number | null, message: string, kind: ProviderErrorKind = "client") {
+  return vi.fn<RunCheck>(async () => {
+    throw new ProviderError({ provider: "anthropic", kind, status, attempts: 1, message });
+  });
+}
+
+function deps(anthropic: RunCheck, store: OutageStore) {
+  const all: Record<ProviderId, RunCheck> = { openai: answeringRunner("openai"), anthropic, perplexity: answeringRunner("perplexity") };
+  return { checkRunner: (p: ProviderId) => all[p], extractNames, claudeOutage: store, now: () => NOW };
+}
+
+async function scan(anthropic: RunCheck, store: OutageStore, opts: { claudeOnly?: boolean; others?: RunCheck } = {}) {
+  const agency = await createScanAgency();
+  const business = await createScanBusiness(agency);
+  if (opts.claudeOnly) {
+    const { error } = await service.from("businesses").update({ models: ["anthropic"] }).eq("id", business.businessId);
+    if (error) throw error;
+  }
+  const jobId = await newJob(business);
+  const base = deps(anthropic, store);
+  const others = opts.others;
+  const checkRunner = others ? (p: ProviderId) => (p === "anthropic" ? anthropic : others) : base.checkRunner;
+  const outcome = await runScan(jobId, { ...base, checkRunner });
+  if (outcome.status === "skipped") throw new Error(`unexpected skip: ${outcome.reason}`);
+  return { outcome, agencyId: agency.agencyId, jobId };
+}
+
+async function heldFor(jobId: string) {
+  const { data } = await service.from("credit_holds").select("amount").eq("scan_job_id", jobId).single();
+  return data!.amount;
+}
+
+async function runFailures(runId: string) {
+  const { data } = await service.from("visibility_runs").select("failed_by_provider").eq("id", runId).single();
+  return data!.failed_by_provider as Record<string, { failed: number; skipped?: number }>;
+}
+
+const INVALID_KEY = 'anthropic returned 401: 401 {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}';
+const NO_CREDIT = "anthropic returned 400: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing.";
+
+describe("runScan when Claude is out of service", () => {
+  it("marks Claude unavailable on an invalid key and skips the Claude checks not yet started", async () => {
+    const { store } = memoryStore();
+    const claude = claudeFails(401, INVALID_KEY);
+    const { outcome } = await scan(claude, store);
+
+    expect(store.mark).toHaveBeenCalledTimes(1);
+    expect(store.mark).toHaveBeenCalledWith("auth", INVALID_KEY);
+    // Only the checks already running when the first one failed reached Claude.
+    expect(claude.mock.calls.length).toBeLessThanOrEqual(CHECKS_AT_ONCE);
+    expect(outcome.skipped).toBe(12 - claude.mock.calls.length);
+    // One provider error per Claude call that ran, none for the skipped ones.
+    expect(recordProviderError).toHaveBeenCalledTimes(claude.mock.calls.length);
+    expect(outcome).toMatchObject({ status: "done", checks: 36, failed: claude.mock.calls.length, charged: 24 });
+    expect((await runFailures(outcome.runId)).anthropic).toMatchObject({ skipped: outcome.skipped });
+  });
+
+  it("marks Claude unavailable when the Anthropic account is out of credit", async () => {
+    const { store } = memoryStore();
+    await scan(claudeFails(400, NO_CREDIT), store);
+    expect(store.mark).toHaveBeenCalledTimes(1);
+    expect(store.mark.mock.calls[0][0]).toBe("credit");
+  });
+
+  it("asks every Claude check through a rate limit, then marks Claude down once all of them failed (BUG-285)", async () => {
+    const { store } = memoryStore();
+    const claude = claudeFails(429, "anthropic returned 429: rate_limit_error", "rate_limit");
+    const { outcome } = await scan(claude, store);
+
+    // One failed check never switches Claude off; only the whole scan's Claude checks failing does.
+    expect(claude).toHaveBeenCalledTimes(12);
+    expect(store.mark).toHaveBeenCalledTimes(1);
+    expect(store.mark).toHaveBeenCalledWith("down", "anthropic returned 429: rate_limit_error");
+    expect(outcome).toMatchObject({ status: "done", failed: 12, skipped: 0, charged: 24, outage: false });
+  });
+
+  it("does not mark Claude down when some Claude checks answer", async () => {
+    const { store } = memoryStore();
+    const answers = answeringRunner("anthropic");
+    let calls = 0;
+    const someFail = vi.fn<RunCheck>(async (input) => {
+      if (++calls % 2 === 0) return answers(input);
+      throw new ProviderError({ provider: "anthropic", kind: "server", status: 529, attempts: 3, message: "anthropic returned 529" });
+    });
+    const { outcome } = await scan(someFail, store);
+
+    expect(store.mark).not.toHaveBeenCalled();
+    expect(outcome).toMatchObject({ status: "done", failed: 6, skipped: 0 });
+  });
+
+  it("fails a Claude-only scan as an outage when Claude is not answering, so the worker does not retry it", async () => {
+    const { store } = memoryStore();
+    const claude = claudeFails(null, "anthropic did not answer within 30000 ms", "timeout");
+    const { outcome } = await scan(claude, store, { claudeOnly: true });
+
+    expect(outcome).toMatchObject({ status: "failed", checks: 12, failed: 12, charged: 0, outage: true });
+    expect(store.mark).toHaveBeenCalledWith("down", "anthropic did not answer within 30000 ms");
+  });
+
+  it("is not an outage when a check failed for another reason", async () => {
+    const { store } = memoryStore();
+    const badRequest: RunCheck = async () => {
+      throw new ProviderError({ provider: "openai", kind: "client", status: 400, attempts: 1, message: "openai returned 400" });
+    };
+    const { outcome } = await scan(failingRunner("anthropic"), store, { others: badRequest });
+
+    expect(outcome).toMatchObject({ status: "failed", failed: 36, outage: false });
+  });
+
+  it("holds and charges nothing for Claude while it is unavailable", async () => {
+    const { store } = memoryStore(openOutage(5));
+    const claude = answeringRunner("anthropic");
+    const { outcome, agencyId, jobId } = await scan(claude, store);
+
+    expect(claude).not.toHaveBeenCalled();
+    expect(await heldFor(jobId)).toBe(24);
+    expect(outcome).toMatchObject({ status: "done", checks: 24, failed: 0, charged: 24, released: 0, skipped: 12 });
+    expect(await balance(agencyId)).toBe(76);
+    expect((await runFailures(outcome.runId)).anthropic).toMatchObject({ failed: 0, skipped: 12 });
+    // Skipped checks are not provider errors: nothing new is logged for them.
+    expect(store.mark).not.toHaveBeenCalled();
+    expect(recordProviderError).not.toHaveBeenCalled();
+  });
+
+  it("tries Claude again once the window has passed, and brings it back when it answers", async () => {
+    const { store, state } = memoryStore(openOutage(CLAUDE_OUTAGE_MINUTES + 1));
+    const claude = answeringRunner("anthropic");
+    const { outcome } = await scan(claude, store);
+
+    expect(store.clear).toHaveBeenCalledTimes(1);
+    expect(state.outage).toBeNull();
+    expect(claude).toHaveBeenCalledTimes(12);
+    expect(outcome).toMatchObject({ status: "done", checks: 36, charged: 36, skipped: 0 });
+  });
+
+  it("asks Claude only once after the window when the key still fails", async () => {
+    const { store } = memoryStore(openOutage(CLAUDE_OUTAGE_MINUTES + 1));
+    const claude = claudeFails(401, INVALID_KEY);
+    const { outcome } = await scan(claude, store);
+
+    expect(claude).toHaveBeenCalledTimes(1);
+    expect(store.mark).toHaveBeenCalledTimes(1);
+    expect(store.clear).not.toHaveBeenCalled();
+    expect(outcome).toMatchObject({ failed: 1, skipped: 11, charged: 24 });
+  });
+
+  it("keeps Claude out, and the outage open, when the probe finds it still not answering", async () => {
+    const { store, state } = memoryStore(openOutage(CLAUDE_OUTAGE_MINUTES + 1));
+    const claude = claudeFails(529, "anthropic returned 529: overloaded_error", "server");
+    const { outcome } = await scan(claude, store);
+
+    expect(claude).toHaveBeenCalledTimes(1);
+    // The window starts again, with the reason the outage was opened for.
+    expect(store.mark).toHaveBeenCalledTimes(1);
+    expect(store.mark).toHaveBeenCalledWith("auth", "anthropic returned 529: overloaded_error");
+    expect(state.outage?.lastSeenAt).toEqual(NOW);
+    expect(outcome).toMatchObject({ status: "done", failed: 1, skipped: 11, charged: 24 });
+  });
+
+  it("probes a Claude that was down and brings it back when it answers", async () => {
+    const { store, state } = memoryStore(openOutage(CLAUDE_OUTAGE_MINUTES + 1, "down"));
+    const { outcome } = await scan(answeringRunner("anthropic"), store);
+
+    expect(state.outage).toBeNull();
+    expect(outcome).toMatchObject({ status: "done", charged: 36, skipped: 0 });
+  });
+});

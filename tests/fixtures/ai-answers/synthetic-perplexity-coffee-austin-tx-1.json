@@ -1,0 +1,25 @@
+{
+  "synthetic": true,
+  "provider": "perplexity",
+  "question": "What is the best coffee shop in Austin, TX?",
+  "answerText": "Top coffee picks in Austin, TX:\n- Congress Cup [1]\n- Barton Bean [2]\n- Eastside Espresso [3]\n\nThese are based on local directory listings and reviews.",
+  "citations": [
+    {
+      "url": "https://congresscup.example/",
+      "title": "Congress Cup"
+    },
+    {
+      "url": "https://bartonbean.example/",
+      "title": "Barton Bean"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=coffee&find_loc=Austin%2C%20TX",
+      "title": "Top coffee in Austin, TX"
+    }
+  ],
+  "names": [
+    "Congress Cup",
+    "Barton Bean",
+    "Eastside Espresso"
+  ]
+}

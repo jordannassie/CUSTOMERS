@@ -1,0 +1,12 @@
+{
+  "synthetic": true,
+  "provider": "anthropic",
+  "question": "Where can I find an emergency dentist open today in Orange, CA?",
+  "answerText": "Based on recent reviews, Orange Circle Dental is a popular choice in Orange, CA, known for strong local reviews and friendly staff. Locals also recommend Tustin Street Smiles and Old Towne Dentistry. I would call ahead to confirm availability.",
+  "citations": [],
+  "names": [
+    "Orange Circle Dental",
+    "Tustin Street Smiles",
+    "Old Towne Dentistry"
+  ]
+}

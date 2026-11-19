@@ -1,27 +1,23 @@
+import { Suspense } from "react";
+import { PublicPageSkeleton } from "@/components/site/PublicPageSkeleton";
 import type { Metadata } from "next";
-import SiteHeader from "@/components/site/SiteHeader";
-import SiteFooter from "@/components/site/SiteFooter";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
 import { AppsBrowse } from "@/components/site/apps/AppsBrowse";
 import { DIRECTORY_CATALOG } from "@/modules/apps-directory/catalog";
 import { listDirectoryOverrides } from "@/modules/apps-directory/dal";
 import { directorySearchSchema } from "@/modules/apps-directory/schema";
 import { mergeCatalog, queryDirectory } from "@/modules/apps-directory/service";
-import { listNativeSummaries } from "@/modules/apps-directory/review-dal";
+import { listNativeSummaries } from "@/modules/apps-directory/reviews/dal";
 import { env } from "@/lib/env";
+import { jsonLdHtml } from "@/lib/json-ld";
+import { pageMetadata } from "@/lib/site-metadata";
 
 const TITLE = "AI Apps Directory";
 const DESCRIPTION = "Search AI tools, apps, and software for marketing, sales, support, and everyday work.";
 
-export const metadata: Metadata = {
-  title: TITLE,
-  description: DESCRIPTION,
-  alternates: { canonical: "https://customers.direct/apps" },
-  openGraph: {
-    title: `${TITLE} | Customers.Direct`,
-    description: DESCRIPTION,
-    url: "https://customers.direct/apps",
-  },
-};
+// The shared helper, so the link preview has the site's image like every other page (MVP test, 2026-11-16).
+export const metadata: Metadata = pageMetadata({ title: TITLE, description: DESCRIPTION, path: "/apps" });
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -29,7 +25,7 @@ function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function AppsPage({ searchParams }: { searchParams: SearchParams }) {
+async function AppsPageContent({ searchParams }: { searchParams: SearchParams }) {
   const raw = await searchParams;
   const parsed = directorySearchSchema.safeParse({
     q: first(raw.q),
@@ -57,12 +53,22 @@ export default async function AppsPage({ searchParams }: { searchParams: SearchP
 
   return (
     <>
-      <SiteHeader />
-      <main className="min-h-screen bg-[#FAFAF8]">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
+      <Header />
+      <main className="min-h-screen bg-background">
+        <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdHtml(itemList)} />
         <AppsBrowse query={query} result={result} ratings={ratings} embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} formId={env.NEXT_PUBLIC_BEEHIIV_FORM_ID} />
       </main>
-      <SiteFooter />
+      <Footer />
     </>
+  );
+}
+
+
+// Reads the request (search params, the signed-in user), so it streams inside Suspense (Cache Components).
+export default function AppsPage(props: { searchParams: SearchParams }) {
+  return (
+    <Suspense fallback={<PublicPageSkeleton />}>
+      <AppsPageContent {...props} />
+    </Suspense>
   );
 }

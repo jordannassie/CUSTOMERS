@@ -1,0 +1,24 @@
+{
+  "synthetic": true,
+  "provider": "perplexity",
+  "question": "Where can I find an emergency dentist open today in Orange, CA?",
+  "answerText": "Top dentist picks in Orange, CA:\n- Old Towne Dentistry [1]\n- Tustin Street Smiles [2]\n\nThese are based on local directory listings and reviews.",
+  "citations": [
+    {
+      "url": "https://oldtownedentistry.example/",
+      "title": "Old Towne Dentistry"
+    },
+    {
+      "url": "https://tustinstreetsmiles.example/",
+      "title": "Tustin Street Smiles"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=dentist&find_loc=Orange%2C%20CA",
+      "title": "Top dentist in Orange, CA"
+    }
+  ],
+  "names": [
+    "Old Towne Dentistry",
+    "Tustin Street Smiles"
+  ]
+}

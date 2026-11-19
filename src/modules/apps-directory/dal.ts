@@ -1,6 +1,7 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isCategoryId, type AppCategoryId, type AppSource, type DirectoryApp } from "./types";
+import { isMissingTable } from "@/lib/supabase/missing-table";
 
 type AppRow = {
   slug: string;
@@ -16,10 +17,7 @@ type AppRow = {
   active: boolean;
 };
 
-function missingTable(error: { code?: string; message?: string } | null) {
-  if (!error) return false;
-  return error.code === "42P01" || error.code === "PGRST205" || /directory_apps|directory_clicks/i.test(error.message ?? "");
-}
+const missingTable = (error: { code?: string; message?: string } | null) => isMissingTable(error, /directory_apps|directory_clicks/i);
 
 function mapRow(row: AppRow): DirectoryApp | null {
   const categories = row.categories.filter(isCategoryId);
@@ -123,5 +121,42 @@ export async function listRecentClicks(): Promise<{ clicks: { slug: string; sour
     };
   } catch {
     return { clicks: [], unavailable: true };
+  }
+}
+
+/** Removes the admin's saved version of an app, so the built-in one (if any) shows again. */
+export async function deleteDirectoryApp(slug: string): Promise<{ ok: true } | { ok: false; unavailable: boolean }> {
+  const { error } = await createServiceClient().from("directory_apps").delete().eq("slug", slug);
+  if (error) {
+    console.error("[apps] delete:", error.code, error.message);
+    return { ok: false, unavailable: missingTable(error) };
+  }
+  return { ok: true };
+}
+
+export type ClickTotals = { slug: string; views: number; visits: number; reviews: number };
+
+/** Clicks per app over the last `days` days (newest 5,000 at most), most clicked first. */
+export async function listClickTotals(days = 30): Promise<ClickTotals[]> {
+  try {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await createServiceClient()
+      .from("directory_clicks")
+      .select("slug, destination")
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(5000);
+    if (error || !data) return [];
+    const totals = new Map<string, ClickTotals>();
+    for (const row of data) {
+      const t = totals.get(row.slug) ?? { slug: row.slug, views: 0, visits: 0, reviews: 0 };
+      if (row.destination === "view") t.views += 1;
+      else if (row.destination === "review") t.reviews += 1;
+      else t.visits += 1;
+      totals.set(row.slug, t);
+    }
+    return [...totals.values()].sort((a, b) => b.views + b.visits + b.reviews - (a.views + a.visits + a.reviews));
+  } catch {
+    return [];
   }
 }

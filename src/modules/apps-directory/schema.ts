@@ -14,8 +14,10 @@ export type DirectorySearch = z.infer<typeof directorySearchSchema>;
 
 const httpsUrl = z.string().trim().url().refine((value) => value.startsWith("https://"), "Use an https link.");
 
+export const directorySlugSchema = z.string().trim().max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens.");
+
 export const directoryAppSchema = z.object({
-  slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens."),
+  slug: directorySlugSchema,
   name: z.string().trim().min(1).max(80),
   provider: z.string().trim().min(1).max(80),
   description: z.string().trim().min(1).max(180),
@@ -31,6 +33,11 @@ export const directoryAppSchema = z.object({
 export function parseCategoryList(value: string): AppCategoryId[] {
   const ids = value.split(",").map((part) => part.trim()).filter(Boolean);
   return ids.filter(isCategoryId);
+}
+
+/** Typed category ids that are not real ones, so the admin form can say so instead of dropping them quietly. */
+export function unknownCategories(value: string): string[] {
+  return value.split(",").map((part) => part.trim()).filter((id) => id && !isCategoryId(id));
 }
 
 const OWN_HOSTS = new Set(["customers.direct", "www.customers.direct", "localhost"]);

@@ -1,0 +1,25 @@
+{
+  "synthetic": true,
+  "provider": "openai",
+  "question": "What is the best coffee shop in Orange, CA?",
+  "answerText": "Here are some well reviewed options in Orange, CA:\n\n1. **Citrus Bean Co.**: strong local reviews and friendly staff.\n2. **Bean There Coffee**: convenient hours and easy parking.\n3. **Rival Roasters**: consistent quality mentioned in many reviews.\n\nCheck current hours before you go.",
+  "citations": [
+    {
+      "url": "https://citrusbeanco.example/",
+      "title": "Citrus Bean Co."
+    },
+    {
+      "url": "https://beantherecoffee.example/",
+      "title": "Bean There Coffee"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=coffee&find_loc=Orange%2C%20CA",
+      "title": "Top coffee in Orange, CA"
+    }
+  ],
+  "names": [
+    "Citrus Bean Co.",
+    "Bean There Coffee",
+    "Rival Roasters"
+  ]
+}

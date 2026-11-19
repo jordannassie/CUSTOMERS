@@ -21,7 +21,7 @@ Phase 6 · M · Depends on: B-09, B-15, B-13 · Blocked by Jordan: no · MVP_SPE
 **What the user sees**
 - A clean, calm app frame with six clear menu items and their credit balance always visible.
 - On a phone, a menu button opens the same navigation.
-- Switching business keeps them on the same page for the other business.
+- Switching business opens the other business's Overview (changed 2026-10-17 at the user's request: a page kept open for the old business, such as Billing, looked unchanged).
 
 **Engineering checks**
 - Playwright: navigation, switcher and widget states (normal, trial, 0, negative).

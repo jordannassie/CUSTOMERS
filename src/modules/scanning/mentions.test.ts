@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { coreName, domainOf, isGenericName, normaliseWithOffsets } from "./mention-text";
+import { brandName, coreName, domainBrand, domainOf, isGenericName, normaliseWithOffsets } from "./mention-text";
 import { detectMention, detectMentions } from "./mentions";
 
 const austin = { city: "Austin", hasWebsite: true };
@@ -59,6 +59,42 @@ describe("detectMention: generic and short names need a second signal", () => {
     expect(isGenericName(coreName("Best Plumbing LLC"))).toBe(true);
     expect(isGenericName(coreName("Top Pro Roofing"))).toBe(true);
     expect(isGenericName(coreName("Hernandez Roofing"))).toBe(false);
+    expect(isGenericName(coreName("Khaadi"))).toBe(false);
+    expect(isGenericName(coreName("Starbucks"))).toBe(false);
+    expect(isGenericName(coreName("Plumbing"))).toBe(true);
+    expect(isGenericName(coreName("Gap"))).toBe(true);
+    expect(isGenericName(coreName("Nike"))).toBe(false);
+  });
+});
+
+// BUG-076: excerpts of real Perplexity answers from 2026-10-07 (Khaadi, Islamabad). Each names Khaadi as a brand,
+// and none has the city within 200 characters, so the old one-word rule missed them.
+describe("detectMention: distinctive one-word names", () => {
+  const khaadi = { name: "Khaadi", website: "khaadi.com", city: "Islamabad", hasWebsite: true };
+
+  it.each([
+    "For **Pakistani ready-to-wear and fabrics**, look at brands such as Khaadi, Sapphire, Nishat Linen, Gul Ahmed, or Bareeze.",
+    "| Retailer | Best for |\n|---|---|\n| **Khaadi** | Everyday and semi-formal Pakistani wear |",
+    "For a specific store, **Khaadi** is a solid choice for contemporary Pakistani styles and ready-to-wear.",
+  ])("counts a brand named in passing: %s", (answer) => {
+    expect(detectMention(answer, khaadi).mentioned).toBe(true);
+  });
+
+  it("counts other one-word brands without a city nearby", () => {
+    expect(detectMention("Nike and Adidas both have outlet stores.", { name: "Nike", city: "Austin" }).mentioned).toBe(true);
+    expect(detectMention("1. **Starbucks**: open early.", { name: "Starbucks", city: "Austin" }).mentioned).toBe(true);
+  });
+
+  it("does not count the word used as an ordinary word", () => {
+    const sapphire = { name: "Sapphire", city: "Islamabad", hasWebsite: true };
+    expect(detectMention("Jewellers here sell sapphire rings and gold sets.", sapphire).mentioned).toBe(false);
+    expect(detectMention("Sapphire stocks lawn suits for summer.", sapphire).mentioned).toBe(true);
+  });
+
+  it("still needs the city or phone for a business without a website (D-08)", () => {
+    const noSite = { name: "Khaadi", city: "Islamabad", hasWebsite: false };
+    expect(detectMention("Brands such as Khaadi are popular.", noSite).mentioned).toBe(false);
+    expect(detectMention("Khaadi in Islamabad is popular.", noSite).mentioned).toBe(true);
   });
 });
 
@@ -130,6 +166,47 @@ describe("detectMention: list position", () => {
     expect(detectMention(bullets, { name: "Radiant Plumbing" }).position).toBe(2);
     const headings = "### 1. Rapid Rooter\nGood.\n### 2. Radiant Plumbing\nAlso good.";
     expect(detectMention(headings, { name: "Radiant Plumbing" }).position).toBe(2);
+  });
+});
+
+describe("long Google titles (BUG-097)", () => {
+  it("finds the brand before the services or branch", () => {
+    expect(brandName("Radiant Plumbing, Air Conditioning, & Electrical")).toBe("Radiant Plumbing");
+    expect(brandName("Reliant Plumbing - Austin")).toBe("Reliant Plumbing");
+    expect(brandName("Abacus Plumbing, Air Conditioning & Electrical")).toBe("Abacus Plumbing");
+    expect(brandName("Mr. Rooter Plumbing of Austin", "Austin")).toBe("Mr. Rooter Plumbing");
+    expect(brandName("Khaadi | Dolmen Mall Clifton")).toBe("Khaadi");
+  });
+
+  it("keeps names with no shorter brand, and never cuts to a generic word", () => {
+    expect(brandName("Clarke Kent Plumbing", "Austin")).toBeNull();
+    expect(brandName("Roto-Rooter Plumbing & Water Cleanup")).toBeNull();
+    expect(brandName("Plumbing - Austin")).toBeNull();
+    expect(brandName("Best Plumbing, Heating & Air")).toBeNull();
+    expect(brandName("Mr. Rooter Plumbing of Austin")).toBeNull();
+  });
+
+  it("counts an answer that writes only the brand", () => {
+    const answer = "1. **Radiant Plumbing** - full service, fast response.\n2. **Reliant Plumbing** handles drains.";
+    expect(detectMention(answer, { name: "Radiant Plumbing, Air Conditioning, & Electrical", ...austin }).mentioned).toBe(true);
+    expect(detectMention(answer, { name: "Reliant Plumbing - Austin", ...austin })).toMatchObject({ mentioned: true, position: 2 });
+    expect(detectMention("Mr. Rooter Plumbing is open 24/7.", { name: "Mr. Rooter Plumbing of Austin", ...austin }).mentioned).toBe(true);
+  });
+
+  it("finds the brand the website spells, for a branch title with no separator", () => {
+    expect(domainBrand("Cheezious Golra Mor Branch", "cheezious.com")).toBe("Cheezious");
+    expect(domainBrand("Beyond Wow Plumbing & Drains", "https://www.beyondwow.com")).toBe("Beyond Wow");
+    expect(domainBrand("Clarke Kent Plumbing", "clarkekentplumbing.com")).toBeNull();
+    expect(domainBrand("Best Plumbing Austin", "best.com")).toBeNull();
+    expect(domainBrand("Cheezious", "cheezious.com")).toBeNull();
+    const cheezious = { name: "Cheezious Golra Mor Branch", website: "cheezious.com", city: "Islamabad", hasWebsite: true };
+    expect(detectMention("For pizza, Cheezious is the local favourite.", cheezious).mentioned).toBe(true);
+  });
+
+  it("still needs a one-word brand to read as a name", () => {
+    const khaadi = { name: "Khaadi - Dolmen Mall", city: "Karachi", hasWebsite: true };
+    expect(detectMention("Khaadi has new lawn prints.", khaadi).mentioned).toBe(true);
+    expect(detectMention("a khaadi fabric kurta", khaadi).mentioned).toBe(false);
   });
 });
 

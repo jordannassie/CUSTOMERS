@@ -1,7 +1,9 @@
+import { Suspense } from "react";
+import { PublicPageSkeleton } from "@/components/site/PublicPageSkeleton";
 import type { Metadata } from "next";
 import Link from "next/link";
-import SiteHeader from "@/components/site/SiteHeader";
-import SiteFooter from "@/components/site/SiteFooter";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
 import { BriefForm } from "@/components/site/video-ads/BriefForm";
 import { getOrderBySession, recordPaidOrder } from "@/modules/video-ads/dal";
 import { briefTokensMatch, checkoutSessionIdSchema } from "@/modules/video-ads/schema";
@@ -14,17 +16,17 @@ export const metadata: Metadata = {
 
 function Notice({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-2xl border border-[#E5E5E1] bg-white p-8">
-      <h1 className="text-[28px] font-bold tracking-tight text-[#171717]">{title}</h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-[#777773]">{body}</p>
-      <Link href="/ads" className="mt-6 inline-flex text-[15px] font-semibold text-[#0866F5]">
+    <div className="rounded-2xl border border-border bg-white p-8">
+      <h1 className="text-[length:calc(28px*var(--px,1))] font-bold tracking-tight text-foreground">{title}</h1>
+      <p className="mt-3 text-[length:calc(15px*var(--px,1))] leading-relaxed text-muted-foreground">{body}</p>
+      <Link href="/ads" className="mt-6 inline-flex text-[length:calc(15px*var(--px,1))] font-semibold text-[#0866F5]">
         Back to AI Video Ads
       </Link>
     </div>
   );
 }
 
-export default async function VideoAdBriefPage({
+async function VideoAdBriefPageContent({
   searchParams,
 }: {
   searchParams: Promise<{ session_id?: string; token?: string }>;
@@ -95,11 +97,23 @@ export default async function VideoAdBriefPage({
 
   return (
     <>
-      <SiteHeader />
-      <main className="min-h-screen bg-[#FAFAF8] px-4 pb-20 pt-28 sm:px-6">
+      <Header />
+      <main className="min-h-screen bg-background px-4 pb-20 pt-28 sm:px-6">
         <div className="mx-auto max-w-xl">{body}</div>
       </main>
-      <SiteFooter />
+      <Footer />
     </>
+  );
+}
+
+
+// Reads the request (search params, the signed-in user), so it streams inside Suspense (Cache Components).
+export default function VideoAdBriefPage(props: {
+  searchParams: Promise<{ session_id?: string; token?: string }>;
+}) {
+  return (
+    <Suspense fallback={<PublicPageSkeleton />}>
+      <VideoAdBriefPageContent {...props} />
+    </Suspense>
   );
 }

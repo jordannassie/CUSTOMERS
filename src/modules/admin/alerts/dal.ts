@@ -1,0 +1,180 @@
+import "server-only";
+import { timingSafeEqual } from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { env } from "@/lib/env";
+import { createServiceClient } from "@/lib/supabase/service";
+import { adminEmails, requireAdmin } from "@/modules/auth";
+import { createLogEmailClient, sendEmail } from "@/modules/email";
+import type { Database } from "@/types/database.types";
+import { foldClaudeAlerts, serviceAlertChanges, type NotifyDeps, type OpenAlert, type ServiceCheck } from "./service";
+import { CLAUDE_KINDS, QUIET_KINDS, recoveredAlertIds } from "./recovered";
+
+// system_alerts has RLS with no policies, so every read and write here uses the service role (B-69).
+type Db = SupabaseClient<Database>;
+
+const OPEN_ALERT_COLUMNS = "id, kind, severity, message, created_at, last_seen_at";
+
+type AlertRow = { id: string; kind: string; severity: string; message: string; created_at: string; last_seen_at: string };
+
+function toOpenAlert(r: AlertRow): OpenAlert {
+  const severity = r.severity === "critical" || r.severity === "info" ? r.severity : "warning";
+  return { id: r.id, kind: r.kind, severity, message: r.message, createdAt: r.created_at, lastSeenAt: r.last_seen_at };
+}
+
+/** Open alerts for the admin Overview, most serious first. */
+export async function listOpenAlerts(db: Db = createServiceClient()): Promise<OpenAlert[]> {
+  await requireAdmin();
+  const { data, error } = await db
+    .from("system_alerts")
+    .select(OPEN_ALERT_COLUMNS)
+    .is("resolved_at", null)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw new Error(`Could not load open alerts: ${error.message}`);
+  const rank = { critical: 0, warning: 1, info: 2 };
+  return foldClaudeAlerts(data.map(toOpenAlert)).sort((a, b) => rank[a.severity] - rank[b.severity]);
+}
+
+/** Alerts resolved in the last `days` days, newest first, for the bell's Resolved status (owner, 2026-11-17). */
+export async function listResolvedAlerts(db: Db = createServiceClient(), days = 7): Promise<(OpenAlert & { resolvedAt: string })[]> {
+  await requireAdmin();
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const { data, error } = await db
+    .from("system_alerts")
+    .select(`${OPEN_ALERT_COLUMNS}, resolved_at`)
+    .gte("resolved_at", since)
+    .order("resolved_at", { ascending: false })
+    .limit(30);
+  if (error) throw new Error(`Could not load resolved alerts: ${error.message}`);
+  return data.map((r) => ({ ...toOpenAlert(r), resolvedAt: r.resolved_at! }));
+}
+
+/** Marks an open alert resolved. Null when it does not exist or was already resolved. */
+export async function markAlertResolved(alertId: string): Promise<{ kind: string; message: string } | null> {
+  await requireAdmin();
+  const { data, error } = await createServiceClient()
+    .from("system_alerts")
+    .update({ resolved_at: new Date().toISOString() })
+    .eq("id", alertId)
+    .is("resolved_at", null)
+    .select("kind, message")
+    .maybeSingle();
+  if (error) throw new Error(`Could not resolve the alert: ${error.message}`);
+  return data;
+}
+
+/**
+ * Opens an alert for each service the System status check found broken and closes the alerts of those it found working
+ * (serviceAlertChanges). A failed write is logged, never thrown: the System status page still shows the live result.
+ * Returns how many services have an open alert from this check.
+ */
+export async function syncServiceAlerts(services: ServiceCheck[], db: Db = createServiceClient()): Promise<number> {
+  await requireAdmin();
+  return writeServiceAlerts(services, db);
+}
+
+/** The same alert writes for the 15-minute job (no signed-in user; its route checks the worker secret). */
+export async function writeServiceAlerts(services: ServiceCheck[], db: Db = createServiceClient()): Promise<number> {
+  const { raise, resolve } = serviceAlertChanges(services);
+  const results = await Promise.all([
+    ...raise.map((a) =>
+      db.rpc("raise_system_alert", {
+        p_kind: a.kind,
+        p_severity: a.severity,
+        p_message: a.message,
+        p_details: { service: a.serviceId, source: "settings" },
+      }),
+    ),
+    resolve.length > 0
+      ? db.from("system_alerts").update({ resolved_at: new Date().toISOString() }).in("kind", resolve).is("resolved_at", null)
+      : null,
+  ]);
+  for (const r of results) if (r?.error) console.error(`Could not sync the service check alerts: ${r.error.message}`);
+  return raise.length;
+}
+
+// The functions below run from the pg_cron call (no signed-in user); the route checks the worker secret first.
+
+export function isAlertSecret(header: string | null): boolean {
+  const secret = env.WORKER_SECRET;
+  if (!secret || !header) return false;
+  const a = Buffer.from(header);
+  const b = Buffer.from(secret);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/** Runs every check in check_system_alerts(), with the daily cost check when ALERT_DAILY_COST_USD is set. */
+export async function runAlertChecks(db: Db = createServiceClient()): Promise<string[]> {
+  const { data, error } = await db.rpc("check_system_alerts", { p_daily_cost_limit_usd: env.ALERT_DAILY_COST_USD });
+  if (error) throw new Error(`check_system_alerts failed: ${error.message}`);
+  return data ?? [];
+}
+
+/** Live notify dependencies. Outside production emails are logged, never sent (.env.local may hold a real key). */
+export function createNotifyDeps(db: Db = createServiceClient(), overrides: Partial<NotifyDeps> = {}): NotifyDeps {
+  const client = env.NODE_ENV === "production" ? undefined : createLogEmailClient();
+  return {
+    async unemailed() {
+      const { data, error } = await db
+        .from("system_alerts")
+        .select(OPEN_ALERT_COLUMNS)
+        .is("resolved_at", null)
+        .is("emailed_at", null)
+        .order("created_at");
+      if (error) throw new Error(`Could not load alerts to email: ${error.message}`);
+      return data.map(toOpenAlert);
+    },
+
+    async emailedSince(kind, since) {
+      const { count, error } = await db
+        .from("email_log")
+        .select("id", { count: "exact", head: true })
+        .eq("type", "system_alert")
+        .eq("status", "sent")
+        .like("idempotency_key", `system_alert:${kind}:%`)
+        .gt("sent_at", since.toISOString());
+      if (error) throw new Error(`email_log lookup failed: ${error.message}`);
+      return (count ?? 0) > 0;
+    },
+
+    async markEmailed(alertId, at) {
+      const { error } = await db.from("system_alerts").update({ emailed_at: at.toISOString() }).eq("id", alertId);
+      if (error) throw new Error(`Could not mark the alert emailed: ${error.message}`);
+    },
+
+    send: (input) => sendEmail(input, client ? { client } : {}),
+    recipients: adminEmails(),
+    now: () => new Date(),
+    ...overrides,
+  };
+}
+
+/**
+ * Closes the alerts whose problem is gone (recovered.ts): Claude answering again, or a spike with nothing new for a
+ * day. Run by the 15-minute job. Returns how many it closed; a failed read or write is logged, never thrown.
+ */
+export async function closeRecoveredAlerts(now = new Date(), db: Db = createServiceClient()): Promise<number> {
+  const [open, claude] = await Promise.all([
+    db.from("system_alerts").select("id, kind, last_seen_at").is("resolved_at", null).in("kind", [...CLAUDE_KINDS, ...QUIET_KINDS]),
+    db
+      .from("visibility_results")
+      .select("created_at")
+      .eq("provider", "anthropic")
+      .eq("cached", false)
+      .eq("is_sample", false)
+      .order("created_at", { ascending: false })
+      .limit(1),
+  ]);
+  if (open.error || claude.error) {
+    console.error(`[admin/alerts] could not check recovered alerts: ${(open.error ?? claude.error)!.message}`);
+    return 0;
+  }
+  const ids = recoveredAlertIds(open.data, claude.data[0]?.created_at ?? null, now);
+  if (ids.length === 0) return 0;
+  const { error } = await db.from("system_alerts").update({ resolved_at: now.toISOString() }).in("id", ids).is("resolved_at", null);
+  if (error) {
+    console.error(`[admin/alerts] could not close recovered alerts: ${error.message}`);
+    return 0;
+  }
+  return ids.length;
+}

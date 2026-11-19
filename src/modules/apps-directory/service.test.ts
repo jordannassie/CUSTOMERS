@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DIRECTORY_CATALOG, HOME_FEATURED_SLUGS } from "./catalog";
 import { hasVerifiedRating, ratingStars } from "./rating";
-import { destinationFor, isAllowedReviewUrl, utmFromReferer } from "./schema";
+import { destinationFor, isAllowedReviewUrl, parseCategoryList, unknownCategories, utmFromReferer } from "./schema";
 import { mergeCatalog, queryDirectory } from "./service";
 
 const baseQuery = { q: "", category: "all", sort: "name" as const, page: 1 };
@@ -58,5 +58,11 @@ describe("apps directory", () => {
     expect(utmFromReferer("https://evil.example/?utm_source=nope").utmSource).toBeNull();
     expect(isAllowedReviewUrl("https://evil.example/reviews")).toBe(false);
     expect(isAllowedReviewUrl("https://www.g2.com/products/chatgpt/reviews")).toBe(true);
+  });
+
+  it("names typed category ids that are not real ones, so the admin form does not drop them quietly", () => {
+    expect(unknownCategories("marketing, content-design, qa-sweep")).toEqual(["qa-sweep"]);
+    expect(unknownCategories(" marketing , ,content-design ")).toEqual([]);
+    expect(parseCategoryList("marketing, qa-sweep")).toEqual(["marketing"]);
   });
 });

@@ -6,9 +6,13 @@ Rules set by the user on 2026-09-26: 3 worker sessions at once; the leader revie
 
 ## In progress
 
-Nothing in progress. Up to five worker sessions at once are allowed since 2026-09-27.
+Go-live release: `release/go-live` into `main` (PR #157, draft). Preview audit fixes on `fix/preview-audit` (2026-11-12).
 
-## Done
+## Where we stand (2026-11-12)
+
+98 tasks across 12 phases. 82 have code merged into `release/go-live` (phases 11 and 12 included), 9 wait on people (labelling, legal, sign-off) and 7 are not started (B-01, B-75, B-76, B-80, B-81, B-83, B-92). The live site still runs migrations 001 to 020; the repo is at 093. The steps left before go-live are in `docs/launch/OWNER-TODO.md`.
+
+## Done (as of 2026-10-09)
 
 64 of 81 tasks ticked. 9 more have their code merged and wait on people: B-24, B-25, B-32, B-33, B-34, B-51, B-78, B-79, B-84.
 
@@ -35,6 +39,6 @@ Open questions for people are in [FLAGS.md](./FLAGS.md).
 
 ## Migrations applied to customers-dev but not yet to live
 
-customers-dev has every migration up to 043 (applied on 2026-09-30 and 2026-10-01, fixes BUG-014). 021 to 023 were applied by B-13 after a backup.
+customers-dev had every migration up to 043 on 2026-10-01 (fixes BUG-014); the repo is now at 093. 021 to 023 were applied by B-13 after a backup.
 
-Waiting for staging and live before launch: 021 to 043 (F-47, F-60, F-68). The list is in `supabase/migrations/README.md` on mvp (#129).
+Waiting for staging and live before launch: 021 to 093 (F-47, F-60, F-68). The list is in `supabase/migrations/README.md` on mvp (#129).

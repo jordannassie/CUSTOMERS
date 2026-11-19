@@ -75,7 +75,7 @@ Phase 5 · M · Depends on: B-42 · Blocked by Jordan: prices (D-22) · MVP_SPEC
 **Build**
 1. Server Action `buyTopUp(pack)`: one-time Checkout Session with the Payment Element.
 2. Webhook grants a never-expiring `topup` grant (settling any negative balance first).
-3. `canSpendTopUps`: top-ups are usable only with an active plan or trial.
+3. `canSpendTopUps`: top-ups are usable only with an active plan or trial. Built in B-16 (`src/modules/entitlements`); enforced through `canStartScan`, which B-26 and B-29 call before any credits are held.
 
 **What the user sees**
 - "Buy credits" offers two packs; after paying, the balance goes up at once (or pays off a negative balance first).

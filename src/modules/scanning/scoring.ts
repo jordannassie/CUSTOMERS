@@ -1,0 +1,228 @@
+import { clusterOf, namesCompetitor } from "./check-keys";
+import type { ProviderId } from "./providers/types";
+
+// Visibility score and confidence (MVP_SPEC 5.6, D-63, D-64, D-91). Pure functions over saved checks.
+
+export const SCORE_WINDOW_DAYS = 30;
+export const TREND_DAYS = 7;
+export const DAY_MS = 86_400_000;
+// 95% interval.
+const Z = 1.96;
+
+export type ScoreCheck = {
+  provider: ProviderId;
+  /** The question cluster: questions differ in difficulty, so the margin is computed per question. */
+  questionId: string;
+  checkedAt: Date;
+  mentioned: boolean;
+  competitorsMentioned: string[];
+  /** Checks sharing a key saw the same answer and count once for confidence (D-64). */
+  answerKey: string;
+  /** When its question stopped being asked; it counts in scores read before then, not after (step 9e). */
+  activeUntil?: Date;
+};
+
+export type Estimate = {
+  /** 0 to 100, unrounded. */
+  score: number;
+  /** Plus or minus this many points. */
+  margin: number;
+  checks: number;
+  uniqueAnswers: number;
+};
+
+export type Confidence = "early" | "good" | "high";
+
+export type Standing = "ahead" | "behind" | "about_same";
+
+export type Mentioned = (check: ScoreCheck) => boolean;
+
+type Stats = Estimate & { variance: number };
+
+/** The pooled score alone (no margin): answers naming the business over all answers from the chosen models (D-91). */
+export function poolScore(checks: ScoreCheck[], models: readonly ProviderId[], mentioned: Mentioned): number | null {
+  let total = 0;
+  let mentions = 0;
+  for (const c of checks) {
+    if (!models.includes(c.provider)) continue;
+    total++;
+    if (mentioned(c)) mentions++;
+  }
+  return total === 0 ? null : (100 * mentions) / total;
+}
+
+export function checksInWindow<T extends { checkedAt: Date; activeUntil?: Date }>(checks: T[], now: Date, days = SCORE_WINDOW_DAYS): T[] {
+  const since = now.getTime() - days * DAY_MS;
+  // A question paused or removed later still counts in a score read at an earlier moment, so past points stay as
+  // they were (step 9e); from the moment it stopped it no longer counts.
+  return checks.filter(
+    (c) => c.checkedAt.getTime() > since && c.checkedAt.getTime() <= now.getTime() && (!c.activeUntil || c.activeUntil > now),
+  );
+}
+
+export function confidenceLabel(uniqueAnswers: number): Confidence {
+  if (uniqueAnswers < 50) return "early";
+  return uniqueAnswers <= 200 ? "good" : "high";
+}
+
+export function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[]> {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const k = key(item);
+    const group = groups.get(k);
+    if (group) group.push(item);
+    else groups.set(k, [item]);
+  }
+  return groups;
+}
+
+// Score over all checks; variance stratified by question on each AI tool, over unique answers only (D-64). One
+// model's checks give that model's rate; all chosen models' checks together give the pooled score (D-91).
+function poolStats(checks: ScoreCheck[], mentioned: Mentioned): Stats | null {
+  if (checks.length === 0) return null;
+  let mentions = 0;
+  let variance = 0;
+  let uniqueAnswers = 0;
+  // A question asked of two AI tools is two clusters: the tools differ, so their answers are not one sample.
+  for (const cluster of groupBy(checks, clusterOf).values()) {
+    // One pass: every answer counts toward the score; only the first of each repeated answer toward the spread.
+    const seen = new Set<string>();
+    let unique = 0;
+    let uniqueMentioned = 0;
+    for (const c of cluster) {
+      const named = mentioned(c);
+      if (named) mentions++;
+      if (seen.has(c.answerKey)) continue;
+      seen.add(c.answerKey);
+      unique++;
+      if (named) uniqueMentioned++;
+    }
+    uniqueAnswers += unique;
+    // Adding one hit and one miss keeps a cluster with a single answer from claiming zero spread.
+    const p = (uniqueMentioned + 1) / (unique + 2);
+    const weight = cluster.length / checks.length;
+    variance += (weight * weight * p * (1 - p)) / unique;
+  }
+  return {
+    score: (100 * mentions) / checks.length,
+    margin: Z * 100 * Math.sqrt(variance),
+    checks: checks.length,
+    uniqueAnswers,
+    variance,
+  };
+}
+
+function strip(stats: Stats): Estimate {
+  return {
+    score: stats.score,
+    margin: stats.margin,
+    checks: stats.checks,
+    uniqueAnswers: stats.uniqueAnswers,
+  };
+}
+
+/**
+ * Per model estimates and the overall one (D-91): answers naming the business over all answers from the chosen
+ * models, as one pool, so 9 of 60 answers gives 15 however they split between the AI tools. With the same number
+ * of answers on each tool this equals the old equal-weight average (D-65), margin included. Null overall when no
+ * chosen model has a check.
+ */
+export function estimateFor(checks: ScoreCheck[], models: readonly ProviderId[], mentioned: Mentioned) {
+  const chosen = checks.filter((c) => models.includes(c.provider));
+  const byModel = new Map<ProviderId, Stats>();
+  for (const model of models) {
+    const stats = poolStats(
+      chosen.filter((c) => c.provider === model),
+      mentioned,
+    );
+    if (stats) byModel.set(model, stats);
+  }
+  const pooled = poolStats(chosen, mentioned);
+  return { overall: pooled && strip(pooled), byModel };
+}
+
+export type VisibilityScore = {
+  overall: (Estimate & { confidence: Confidence }) | null;
+  byModel: { model: ProviderId; estimate: Estimate }[];
+};
+
+/** Mentions divided by checks over the last 30 days, per chosen model and overall (all chosen models pooled, D-91). */
+export function visibilityScore(
+  checks: ScoreCheck[],
+  opts: { now: Date; models: readonly ProviderId[] },
+): VisibilityScore {
+  const { overall, byModel } = estimateFor(checksInWindow(checks, opts.now), opts.models, (c) => c.mentioned);
+  return {
+    overall: overall ? { ...overall, confidence: confidenceLabel(overall.uniqueAnswers) } : null,
+    byModel: opts.models.flatMap((model) => {
+      const stats = byModel.get(model);
+      return stats ? [{ model, estimate: strip(stats) }] : [];
+    }),
+  };
+}
+
+export type TrendPoint = { date: string; score: number | null; checks: number };
+
+/** One point per UTC day for the last 7 days, oldest first; null on a day with no checks. */
+export function trendSeries(checks: ScoreCheck[], opts: { now: Date; models: readonly ProviderId[] }): TrendPoint[] {
+  const today = Date.UTC(opts.now.getUTCFullYear(), opts.now.getUTCMonth(), opts.now.getUTCDate());
+  const byDay = groupBy(checks, (c) => c.checkedAt.toISOString().slice(0, 10));
+  return Array.from({ length: TREND_DAYS }, (_, i) => {
+    const date = new Date(today - (TREND_DAYS - 1 - i) * DAY_MS).toISOString().slice(0, 10);
+    const { overall } = estimateFor(byDay.get(date) ?? [], opts.models, (c) => c.mentioned);
+    return {
+      date,
+      score: overall?.score ?? null,
+      checks: overall?.checks ?? 0,
+    };
+  });
+}
+
+/** True only when the gap is larger than the margin of the two estimates together. */
+export function isRealChange(a: Pick<Estimate, "score" | "margin">, b: Pick<Estimate, "score" | "margin">): boolean {
+  return Math.abs(a.score - b.score) > Math.hypot(a.margin, b.margin);
+}
+
+export type Status = "behind" | "same" | "ahead";
+
+/**
+ * The one rule for every ahead or behind label (redesign brief, 2026-10-27): a gap counts when it is larger than your
+ * score's margin. Before, it had to beat both margins combined, so a 13 point gap with a 11 point margin read "About
+ * the same".
+ */
+export function compareStatus(you: number, them: number, margin: number): Status {
+  const diff = them - you;
+  if (diff > margin) return "behind";
+  if (-diff > margin) return "ahead";
+  return "same";
+}
+
+const STANDING: Record<Status, Standing> = { behind: "behind", ahead: "ahead", same: "about_same" };
+
+/** Where you stand against a competitor: "ahead" means you are mentioned more, by more than your margin. */
+export function compareWithCompetitor(you: Pick<Estimate, "score" | "margin">, them: Pick<Estimate, "score"> & { margin?: number }): Standing {
+  return STANDING[compareStatus(you.score, them.score, you.margin)];
+}
+
+export type CompetitorScore = {
+  name: string;
+  estimate: Estimate;
+  standing: Standing;
+};
+
+/** Each competitor's mention rate on the same checks, compared with yours. Empty when you have no score yet. */
+export function competitorScores(
+  checks: ScoreCheck[],
+  competitors: string[],
+  opts: { now: Date; models: readonly ProviderId[] },
+): CompetitorScore[] {
+  const inWindow = checksInWindow(checks, opts.now);
+  const you = estimateFor(inWindow, opts.models, (c) => c.mentioned).overall;
+  if (!you) return [];
+  return competitors.map((name) => {
+    const lower = name.toLowerCase();
+    const mentioned: Mentioned = (c) => namesCompetitor(c, lower);
+    const them = estimateFor(inWindow, opts.models, mentioned).overall!;
+    return { name, estimate: them, standing: compareWithCompetitor(you, them) };
+  });
+}

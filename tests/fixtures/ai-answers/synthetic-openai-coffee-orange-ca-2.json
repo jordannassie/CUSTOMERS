@@ -1,0 +1,24 @@
+{
+  "synthetic": true,
+  "provider": "openai",
+  "question": "Where can I find a quiet cafe to work from in Orange, CA?",
+  "answerText": "Here are some well reviewed options in Orange, CA:\n\n1. **Daily Grind Cafe**: strong local reviews and friendly staff.\n2. **Plaza Pour House**: convenient hours and easy parking.\n\nCheck current hours before you go.",
+  "citations": [
+    {
+      "url": "https://dailygrindcafe.example/",
+      "title": "Daily Grind Cafe"
+    },
+    {
+      "url": "https://plazapourhouse.example/",
+      "title": "Plaza Pour House"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=coffee&find_loc=Orange%2C%20CA",
+      "title": "Top coffee in Orange, CA"
+    }
+  ],
+  "names": [
+    "Daily Grind Cafe",
+    "Plaza Pour House"
+  ]
+}

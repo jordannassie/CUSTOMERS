@@ -1,4 +1,8 @@
 import type { OpportunityCategory, OpportunityImpact } from "@/types/geo";
+import { claudePromptFor } from "./claude-prompt";
+import { seoOpportunities, type SeoOpportunityInput } from "./seo-opportunities";
+
+export type { SeoOpportunityInput } from "./seo-opportunities";
 
 export interface OpportunityDraft {
   title: string;
@@ -16,24 +20,6 @@ export interface VisibilityResultLike {
   cited_sources: Array<{ url: string }>;
 }
 
-export interface SeoOpportunityInput {
-  keywordGaps?: Array<{
-    keyword: string;
-    competitorDomain: string;
-    competitorPosition: number;
-    searchVolume: number;
-    difficulty?: number;
-  }>;
-  topKeywords?: Array<{
-    keyword: string;
-    position: number;
-    searchVolume: number;
-    difficulty?: number;
-  }>;
-  overviewKeywords?: number;
-  overviewTraffic?: number;
-}
-
 interface OpportunityEngineInput {
   businessName: string;
   domain: string | null;
@@ -42,36 +28,22 @@ interface OpportunityEngineInput {
   results: VisibilityResultLike[];
   /** Optional SEO data to generate additional keyword/ranking opportunities */
   seo?: SeoOpportunityInput;
-}
-
-function claudePromptFor(
-  header: string,
-  businessName: string,
-  domain: string | null,
-  evidence: string,
-  ask: string,
-): string {
-  return [
-    `I'm working on AI search visibility (GEO/AEO) for ${businessName}${domain ? ` (${domain})` : ""}.`,
-    "",
-    `Context / evidence (from Customers.Direct's real AI visibility monitoring — do not assume any facts beyond what's stated here):`,
-    evidence,
-    "",
-    header,
-    ask,
-    "",
-    "Important: only use real information about this business that I provide or that you find by reading the actual website — never invent addresses, phone numbers, services, credentials, awards, or testimonials that weren't given to you.",
-  ].join("\n");
+  /** False when the business has no website: no website steps and nothing to copy for Claude. Defaults to true. */
+  hasWebsite?: boolean;
+  /** True only when setup read the website; then, and only then, can we say it had no description on it. */
+  websiteRead?: boolean;
 }
 
 /**
  * Deterministic, evidence-grounded opportunity generator. Every opportunity
- * it produces cites a specific number pulled from real stored results —
+ * it produces cites a specific number pulled from real stored results;
  * it never invents a reason for a ranking change or a fact about the
  * business it wasn't given.
  */
 export function generateOpportunities(input: OpportunityEngineInput): OpportunityDraft[] {
-  const { businessName, domain, description, primaryCity, results, seo } = input;
+  const { businessName, domain, description, primaryCity, results, seo, hasWebsite = true, websiteRead = false } = input;
+  // A fix on the website gets a "Copy for Claude" prompt only when there is a website for it to go on.
+  const prompt = (evidence: string, ask: string) => (hasWebsite ? claudePromptFor("Ask:", businessName, domain, evidence, ask) : "");
   const opportunities: OpportunityDraft[] = [];
   const promptsTested = results.length;
 
@@ -86,44 +58,43 @@ export function generateOpportunities(input: OpportunityEngineInput): Opportunit
   // A) Overall mention rate
   if (mentionRate < 0.5) {
     const impact: OpportunityImpact = mentionRate < 0.2 ? "high" : "medium";
-    const evidence = `AI mentioned ${businessName} in ${mentionedCount} of ${promptsTested} buyer-intent prompts tested (${mentionPct}%).`;
+    // Each result is one AI answer (questions × models), not one question: "0 of 36 answers", not "0 of 36 questions".
+    const evidence = `AI assistants mentioned ${businessName} in ${mentionedCount} of ${promptsTested} answers to customer questions (${mentionPct}%).`;
     opportunities.push({
-      title: "Low AI mention rate on buyer-intent prompts",
-      description: "Your business isn't showing up in most of the AI answers buyers are likely to see.",
+      title: mentionedCount === 0 ? "AI assistants don't mention you yet" : "AI assistants leave you out of most answers",
+      description:
+        mentionedCount === 0
+          ? "None of the answers we checked named your business, so customers who ask AI hear about other businesses instead."
+          : "Most of the answers we checked left your business out, so customers who ask AI often hear about other businesses first.",
       evidence,
       impact,
-      category: "content",
-      recommended_action:
-        "Publish or expand content on your website that directly answers the buyer-intent prompts we tested — clear service descriptions, service-area pages, and FAQ content AI models can quote and cite.",
-      claude_prompt: claudePromptFor(
-        "Ask:",
-        businessName,
-        domain,
+      category: hasWebsite ? "content" : "local_presence",
+      recommended_action: hasWebsite
+        ? "Add clear answers to the questions customers ask on your website: what you offer, the areas you serve, and a page of common questions. AI assistants repeat plain, specific answers they can find."
+        : "Fill in your Google Business Profile in full: what you offer, the areas you serve, your hours and a short description. AI assistants repeat plain, specific answers they can find.",
+      claude_prompt: prompt(
         evidence,
-        "Draft an outline for a services/FAQ page section that clearly and specifically answers common buyer questions in this industry, written so an AI assistant could quote it directly as a factual answer. Leave placeholders for any specific facts (pricing, credentials, service area) I need to fill in myself.",
+        "Draft an outline for a services and common questions section that clearly and specifically answers what customers in this industry ask, written so an AI assistant could quote it directly as a factual answer. Leave placeholders for any specific facts (pricing, credentials, service area) I need to fill in myself.",
       ),
     });
   }
 
   // B) Citation rate
-  if (domain) {
+  if (domain && hasWebsite) {
     const cited = results.filter((r) => r.cited_sources.some((s) => s.url.includes(domain)));
     if (cited.length === 0) {
-      const evidence = `None of the ${promptsTested} AI responses in your latest run cited a page on ${domain} as a source.`;
+      const evidence = `None of the ${promptsTested} AI answers in your latest scan linked to a page on ${domain}.`;
       opportunities.push({
-        title: "No AI citations of your website",
-        description: "AI providers aren't citing your site as a source in their answers.",
+        title: "AI assistants don't link to your website",
+        description: "When AI assistants answer, they point to other websites as the source, not yours.",
         evidence,
         impact: "medium",
         category: "citations",
         recommended_action:
-          "Add or strengthen pages AI models can cite by name — a dedicated services page, a detailed About page, and schema.org structured data (Organization / LocalBusiness / Service).",
-        claude_prompt: claudePromptFor(
-          "Ask:",
-          businessName,
-          domain,
+          "Give AI assistants pages they can point to: one page for your services and a detailed About page. Then add website info for AI, a short block of code that lists your name, address, phone and services. Copy for Claude can write it for you.",
+        claude_prompt: prompt(
           evidence,
-          "Write schema.org JSON-LD structured data (Organization and LocalBusiness types) for this website. Only include fields I can confirm — leave a clear placeholder comment for anything I need to provide (address, phone, hours, etc.).",
+          "Write schema.org JSON-LD markup (Organization and LocalBusiness types) for this website. Only include fields I can confirm. Leave a clear placeholder comment for anything I need to provide (address, phone, hours, etc.).",
         ),
       });
     }
@@ -143,118 +114,62 @@ export function generateOpportunities(input: OpportunityEngineInput): Opportunit
 
   for (const [competitorName, count] of gaps) {
     const gap = count - mentionedCount;
-    const evidence = `"${competitorName}" was mentioned in ${count} of the same ${promptsTested} prompts, compared to ${mentionedCount} for ${businessName}.`;
+    const evidence = `AI assistants mentioned "${competitorName}" in ${count} of the same ${promptsTested} answers, and ${businessName} in ${mentionedCount}.`;
     opportunities.push({
-      title: `${competitorName} is outperforming you in AI answers`,
-      description: `A tracked competitor shows up more often than you do across the same set of prompts.`,
+      title: `AI assistants pick ${competitorName} more often than you`,
+      description: "A competitor you track comes up more often than you when customers ask the same questions.",
       evidence,
       impact: gap >= 3 ? "high" : "medium",
       category: "competitor_gap",
-      recommended_action: `Review ${competitorName}'s website and Google Business Profile for structured data, service pages, and citations that may explain the gap, then close the specific differences you find on your own site.`,
-      claude_prompt: claudePromptFor(
-        "Ask:",
-        businessName,
-        domain,
+      // The next step names where to start: the answers that name them (the Actions card links to them).
+      recommended_action: `On the Questions page, open the questions where AI names ${competitorName}. Note the facts those answers give about them, such as services, reviews or opening hours, then add the same facts about you to ${hasWebsite ? "your website and Google Business Profile" : "your Google Business Profile"}.`,
+      claude_prompt: prompt(
         evidence,
-        `Suggest 3-5 concrete, specific website or content improvements ${businessName} could make to close this visibility gap. Base suggestions only on general AI-search best practices (structured data, clear service pages, citable facts) — do not assume what ${competitorName} does differently since I haven't provided that.`,
+        `Suggest 3 to 5 concrete, specific website or content improvements ${businessName} could make to close this gap. Base suggestions only on general advice for being recommended by AI assistants (schema markup, clear service pages, facts an assistant can quote). Do not assume what ${competitorName} does differently since I haven't provided that.`,
       ),
     });
   }
 
   // D) Missing description
   if (!description || description.trim().length < 40) {
+    // "Our check didn't find one" only when the check read the site; a blocked or unread site says nothing about it.
     const evidence = description
-      ? `Your stored business description is only ${description.trim().length} characters.`
-      : "No business description is on file, and our site scan did not find one in your meta tags or structured data.";
+      ? `Your saved business description is only ${description.trim().length} characters long.`
+      : websiteRead
+        ? "There is no business description on file, and our check of your website didn't find one either."
+        : "There is no business description on file.";
     opportunities.push({
-      title: "Thin or missing business description",
-      description: "AI models rely heavily on your own site text to understand what you do.",
+      title: "Your business description is short or missing",
+      description: hasWebsite
+        ? "AI assistants lean on the words on your own website to understand what you do."
+        : "AI assistants lean on the words in your Google Business Profile to understand what you do.",
       evidence,
       impact: "medium",
       category: "entity_consistency",
-      recommended_action:
-        "Add a clear, specific 2-3 sentence description of your business to your homepage meta description and About page.",
-      claude_prompt: claudePromptFor(
-        "Ask:",
-        businessName,
-        domain,
+      recommended_action: hasWebsite
+        ? "Write 2 or 3 clear sentences about what you do and where you do it. Put them on your homepage, your About page and your homepage's search description."
+        : "Write 2 or 3 clear sentences about what you do and where you do it. Put them in the description of your Google Business Profile.",
+      claude_prompt: prompt(
         evidence,
-        "Draft 3 versions of a clear, specific 2-3 sentence business description I can use as a meta description and About-page intro. Use placeholders for any facts you don't have (exact services, years in business, service area).",
+        "Draft 3 versions of a clear, specific business description of 2 or 3 sentences that I can use as a meta description and as the intro of my About page. Use placeholders for any facts you don't have (exact services, years in business, service area).",
       ),
     });
   }
 
-  // E) Missing location
+  // E) Missing location; a settings task, so there is nothing to copy for Claude.
   if (!primaryCity) {
     opportunities.push({
-      title: "No service location on file",
-      description: "Location-specific buyer-intent prompts can't be tested without this.",
-      evidence: "No primary city is set for this business.",
+      title: "Your city is missing",
+      description: "Without your city we can't ask AI the local questions your customers ask.",
+      evidence: "No main city is set for this business.",
       impact: "low",
       category: "local_presence",
-      recommended_action: "Add your primary service city/region in Settings so we can track location-specific prompts.",
-      claude_prompt: claudePromptFor(
-        "Ask:",
-        businessName,
-        domain,
-        "No primary service city is on file for this business.",
-        "Not applicable — this is a data-entry task in the Customers.Direct dashboard, not a content task.",
-      ),
+      recommended_action: "Add the main city or area you serve in Settings, so we can check the questions local customers ask.",
+      claude_prompt: "",
     });
   }
 
-  // F) SEO keyword gaps (if SEO data is available)
-  if (seo?.keywordGaps && seo.keywordGaps.length > 0) {
-    const topGap = seo.keywordGaps
-      .sort((a, b) => b.searchVolume - a.searchVolume)
-      .slice(0, 1)[0];
-
-    if (topGap && topGap.searchVolume > 50) {
-      const evidence = `"${topGap.keyword}" has ${topGap.searchVolume.toLocaleString()} monthly searches. ${topGap.competitorDomain} ranks #${topGap.competitorPosition}. You are not ranking for this keyword.`;
-      opportunities.push({
-        title: `Missing keyword opportunity: "${topGap.keyword}"`,
-        description: `A competitor ranks for a high-value keyword you're not targeting. This represents direct traffic you're missing.`,
-        evidence,
-        impact: topGap.searchVolume > 500 ? "high" : "medium",
-        category: "content",
-        recommended_action: `Create or optimize a page targeting "${topGap.keyword}" with clear service descriptions, local relevance, FAQ content, and proper schema markup.`,
-        claude_prompt: claudePromptFor(
-          "Ask:",
-          businessName,
-          domain,
-          evidence,
-          `Write a page outline for a new or updated page targeting "${topGap.keyword}". Include: target keyword in title and H1, service description (3–4 paragraphs), local relevance signals, FAQ section (5 questions buyers ask), and JSON-LD schema suggestions. Do not invent specific facts — use placeholders for details I need to fill in.`,
-        ),
-      });
-    }
-  }
-
-  // G) SEO ranking opportunities (pages ranking #11–20)
-  if (seo?.topKeywords && seo.topKeywords.length > 0) {
-    const nearMissKeywords = seo.topKeywords.filter(
-      (kw) => kw.position >= 11 && kw.position <= 20 && kw.searchVolume > 100,
-    );
-
-    if (nearMissKeywords.length > 0) {
-      const best = nearMissKeywords.sort((a, b) => b.searchVolume - a.searchVolume)[0];
-      const evidence = `You rank #${best.position} for "${best.keyword}" (${best.searchVolume.toLocaleString()} monthly searches). Ranking on page 1 could significantly increase traffic.`;
-      opportunities.push({
-        title: `Rank improvement opportunity: "${best.keyword}"`,
-        description: `You're ranking just outside page 1 for a valuable keyword. Small improvements could move you into top 10.`,
-        evidence,
-        impact: best.searchVolume > 200 ? "high" : "medium",
-        category: "content",
-        recommended_action: `Strengthen the page currently ranking #${best.position} for "${best.keyword}" by improving title, H1, content depth, internal links, and schema.`,
-        claude_prompt: claudePromptFor(
-          "Ask:",
-          businessName,
-          domain,
-          evidence,
-          `I have a page ranking #${best.position} for "${best.keyword}" with ${best.searchVolume.toLocaleString()} monthly searches. Help me improve this page to rank in the top 10. Review what typical top-10 pages for this keyword include, then suggest specific improvements for: title tag, H1, content depth/comprehensiveness, FAQ section, internal linking, and schema. Keep suggestions practical and avoid keyword stuffing.`,
-        ),
-      });
-    }
-  }
+  opportunities.push(...seoOpportunities(seo, { businessName, domain, withPrompt: hasWebsite }));
 
   return opportunities;
 }

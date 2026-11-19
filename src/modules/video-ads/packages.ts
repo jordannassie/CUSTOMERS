@@ -20,7 +20,7 @@ export const VIDEO_AD_PACKAGES: readonly VideoAdPackage[] = [
     name: "Starter",
     priceLabel: "$99",
     amountCents: 9_900,
-    cta: "Get 1 Video: $99",
+    cta: "Get 1 video: $99",
     featured: true,
     checkoutName: "Customers.Direct AI video ad, Starter",
     features: [
@@ -36,7 +36,7 @@ export const VIDEO_AD_PACKAGES: readonly VideoAdPackage[] = [
     name: "Growth",
     priceLabel: "$297",
     amountCents: 29_700,
-    cta: "Get 3 Videos: $297",
+    cta: "Get 3 videos: $297",
     featured: false,
     checkoutName: "Customers.Direct AI video ads, Growth",
     features: [
@@ -52,7 +52,7 @@ export const VIDEO_AD_PACKAGES: readonly VideoAdPackage[] = [
     name: "Scale",
     priceLabel: "$495",
     amountCents: 49_500,
-    cta: "Get 5 Videos: $495",
+    cta: "Get 5 videos: $495",
     featured: false,
     checkoutName: "Customers.Direct AI video ads, Scale",
     features: [

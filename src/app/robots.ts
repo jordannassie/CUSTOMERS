@@ -1,14 +1,9 @@
 import type { MetadataRoute } from "next";
+import { PRIVATE_PATHS, SITE_URL } from "@/lib/site-metadata";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [
-      {
-        userAgent: "*",
-        allow: "/",
-        disallow: ["/internal/", "/api/"],
-      },
-    ],
-    sitemap: "https://customers.direct/sitemap.xml",
+    rules: [{ userAgent: "*", allow: "/", disallow: PRIVATE_PATHS }],
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

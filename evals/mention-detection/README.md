@@ -34,6 +34,16 @@ One JSON object per line in `dataset.v1.jsonl`:
 - Roughly half positive and half negative.
 - Tricky names: short or generic ("Ace", "Prime", "Best Plumbing"), names inside other words ("space"), legal suffixes (LLC, Inc, Co), apostrophes and "&", domain-only mentions, aliases, businesses without a website, and same-name businesses in another city.
 
+## Labelling with a spreadsheet (B-24)
+
+1. Export: `LABEL_SUITE=mention-detection LABEL_COUNT=100 npm run label:export`. It reads saved real answers (never sample answers) read-only from the local database by default, 2 cases per answer: the business the question was asked for and one of its competitors. `LABEL_ENV_FILE=.env.development.local.ohio` reads the preview database instead; the live project needs `LABEL_FROM_LIVE=1`. The sheet is written to `evals/results/labelling/mention-detection.csv` (git-ignored).
+2. Open it in Google Sheets or Excel. Fill `mentioned` (yes or no) and `position` (the list item number, empty when it is not a list) for each row, reading the whole answer. Leave a row empty to skip it; add a `note` when unsure.
+3. Download it back as CSV to the same path (or pass `LABEL_CSV=path/to/file.csv` in the next step).
+4. Import: `LABEL_SUITE=mention-detection LABELLER="Your name" npm run label:import`. It adds the labelled rows to `dataset.v1.jsonl` with your name and today's date, keeps rows already there, skips empty ones, and refuses the whole sheet if a row would not load in this suite. You can label in several sittings.
+5. Record who labelled and when under "Labelling" below, then run the fast suite: `npx vitest run --project evals evals/mention-detection`. The paid suite runs in `eval-ai.yml`.
+
+The scripts never call a model and never fill a label themselves: every label comes from the person (MVP_SPEC 25, principle 6).
+
 ## Labelling
 
 Who labelled the cases and when: not yet labelled (flag F-04).

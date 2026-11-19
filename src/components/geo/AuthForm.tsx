@@ -1,46 +1,52 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { passwordError as passwordRuleError } from "@/lib/password-rules";
+import { PasswordChecklist } from "@/components/ui/password-checklist";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { env } from "@/lib/env";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { loginNotice } from "@/modules/auth/callback";
+import { AuthAlert, AuthCard, AuthField, AuthLogo, GoogleIcon, authLinkClass } from "./auth-bits";
+import { logInWithEmail, signUpWithEmail, startGoogleSignIn, type AuthFailure } from "./auth-flow";
+import { AuthNotices } from "./auth-notices";
 
-const LOGO = "/images/logos/logo-black.png";
 
 interface AuthFormProps {
   defaultMode?: "login" | "signup";
+  notice?: string;
   // The page's ?error= value; read on the server so the notice is in the first render.
   errorParam?: string;
+  /** A confirmation link that did not work, shown as an error on first render. */
+  linkError?: string;
 }
 
-const GoogleIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
-    <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
-    <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4c-7.4 0-13.8 4.1-17.1 10.2z" />
-    <path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.2-5.1l-6.6-5.4C29.6 35.5 27 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.6 5.1C9.9 39.6 16.4 44 24 44z" />
-    <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.5l6.6 5.4C41.5 35.9 44 30.4 44 24c0-1.3-.1-2.7-.4-3.5z" />
-  </svg>
-);
 
-export default function AuthForm({ defaultMode = "login", errorParam = "" }: AuthFormProps) {
+export default function AuthForm({ defaultMode = "login", errorParam = "", notice, linkError }: AuthFormProps) {
   const router = useRouter();
-  const oauthFailed = errorParam.includes("oauth") || errorParam.includes("callback");
+  // Each failed link or sign-in has its own wording: a cancelled Google sign-in or a used reset link is not a
+  // "Google signed you in, but" failure (callbackFailurePath).
+  const fromUrl = loginNotice(errorParam);
   const [mode, setMode] = useState<"login" | "signup">(defaultMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
-  const [googleFailed, setGoogleFailed] = useState(oauthFailed);
-  const [error, setError] = useState<string | null>(oauthFailed ? "google_failed" : null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [google, setGoogle] = useState(fromUrl?.kind === "google" ? fromUrl : null);
+  const [linkNotice, setLinkNotice] = useState(fromUrl?.kind === "message" ? fromUrl : null);
+  const [error, setError] = useState<string | null>(linkError ?? null);
+  const [message, setMessage] = useState<string | null>(notice ?? null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  // Which fields the form alert is about, so they are marked invalid and point at it.
+  const [invalid, setInvalid] = useState<"email" | "password" | "both" | null>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   const isSignup = mode === "signup";
 
+  const hadNotice = fromUrl !== null;
   useEffect(() => {
-    if (oauthFailed) window.history.replaceState(null, "", window.location.pathname);
-  }, [oauthFailed]);
+    if (hadNotice) window.history.replaceState(null, "", window.location.pathname);
+  }, [hadNotice]);
 
   // Clear form state when switching tabs
   function switchMode(next: "login" | "signup") {
@@ -49,259 +55,185 @@ export default function AuthForm({ defaultMode = "login", errorParam = "" }: Aut
     setPassword("");
     setError(null);
     setMessage(null);
+    setLinkNotice(null);
+    setPasswordError(null);
+    setInvalid(null);
   }
 
   async function handleGoogle() {
     setError(null);
+    setLinkNotice(null);
     setLoading("google");
-    const supabase = createClient();
-    const params = new URLSearchParams(window.location.search);
-    const next = params.get("next") ?? "/dashboard";
-    // Always use the canonical production URL so the OAuth redirect URI
-    // matches what is registered in Google Cloud Console / Supabase,
-    // and so the PKCE code-verifier cookie is on the correct domain.
-    const siteBase =
-      env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-      window.location.origin;
-    const callbackUrl = `${siteBase}/auth/callback?next=${encodeURIComponent(next)}`;
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: callbackUrl },
-    });
-    if (oauthError) {
-      setGoogleFailed(true);
+    const failed = await startGoogleSignIn();
+    if (failed) {
+      setGoogle({ kind: "google", ...failed });
       setLoading(null);
     }
+  }
+
+  function showFailure(f: AuthFailure) {
+    if (f.passwordError) {
+      setPasswordError(f.passwordError);
+      passwordRef.current?.focus();
+      return;
+    }
+    setError(f.error ?? null);
+    setInvalid(f.invalid ?? null);
   }
 
   async function handleEmailAuth(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setMessage(null);
+    setPasswordError(null);
+    setInvalid(null);
+    // The password rule applies to new passwords only: logging in with an older, simpler one still works.
+    const weak = isSignup ? passwordRuleError(password) : null;
+    if (weak) {
+      setPasswordError(weak);
+      passwordRef.current?.focus();
+      return;
+    }
     setLoading("email");
-    const supabase = createClient();
-
-    if (isSignup) {
-      const siteBase =
-        env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-        window.location.origin;
-      const { error: signupError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${siteBase}/auth/callback`,
-        },
-      });
-      setLoading(null);
-      if (signupError) {
-        const msg = signupError.message.toLowerCase();
-        if (msg.includes("already registered") || msg.includes("already been registered") || msg.includes("user already")) {
-          setError("An account with this email already exists. Try logging in instead.");
-        } else if (msg.includes("password")) {
-          setError("Password must be at least 8 characters.");
-        } else {
-          setError("Unable to create account. Please try again.");
-        }
-        return;
-      }
-      setMessage(
-        "Check your email to confirm your account. If email confirmation is disabled, you can log in immediately.",
-      );
-      return;
-    }
-
-    const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+    const result = isSignup ? await signUpWithEmail(email, password) : await logInWithEmail(email, password);
     setLoading(null);
-    if (loginError) {
-      const msg = loginError.message.toLowerCase();
-      if (msg.includes("invalid") || msg.includes("credentials") || msg.includes("password") || msg.includes("email")) {
-        setError("Email or password is incorrect.");
-      } else if (msg.includes("not found") || msg.includes("no user")) {
-        setError("No account found with that email.");
-      } else {
-        setError("Unable to log in. Please try again.");
-      }
-      return;
-    }
-    router.push("/dashboard");
-    router.refresh();
+    if (result.kind === "failed") return showFailure(result.failure);
+    if (result.kind === "confirm") return setMessage("Check your email to confirm your account.");
+    router.push(result.next);
   }
 
-  return (
-    <div className="w-full max-w-[420px]">
-      {/* Logo */}
-      <div className="text-center mb-8">
-        <Link href="/" aria-label="Customers.Direct — Home">
-          <Image
-            src={LOGO}
-            alt="Customers.Direct"
-            width={148}
-            height={36}
-            priority
-            unoptimized
-            className="h-14 w-auto mx-auto"
-          />
-        </Link>
-      </div>
+  const alertId = "auth-alert";
+  const emailInvalid = invalid === "email" || invalid === "both";
+  const passwordInvalid = invalid === "password" || invalid === "both";
 
-      {/* Card */}
-      <div
-        className="bg-white rounded-2xl border border-[#E5E5E1] overflow-hidden"
-        style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)" }}
-      >
-        {/* ── Tab switcher ──────────────────────────────────────────────── */}
-        <div className="flex border-b border-[#E5E5E1]">
+  return (
+    <div className="w-full max-w-[calc(420px*var(--px,1))]">
+      <AuthLogo />
+
+      <AuthCard>
+        <div className="flex border-b border-border">
           {(["login", "signup"] as const).map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => switchMode(tab)}
-              className={`flex-1 py-3.5 text-[13px] font-semibold transition-colors ${
+              className={`-mb-px flex-1 border-b-2 py-3.5 text-sm font-medium transition-colors duration-150 ease-out focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none focus-visible:ring-inset ${
                 mode === tab
-                  ? "text-[#171717] bg-white border-b-2 border-[#171717] -mb-px"
-                  : "text-[#A3A3A0] bg-[#FAFAF8] hover:text-[#777773]"
+                  ? "border-primary bg-surface text-foreground"
+                  : "border-transparent bg-muted text-muted-foreground hover:text-foreground"
               }`}
               aria-pressed={mode === tab}
             >
-              {tab === "login" ? "Log In" : "Sign Up"}
+              {tab === "login" ? "Log in" : "Sign up"}
             </button>
           ))}
         </div>
 
-        <div className="p-8">
-          {/* Headline */}
-          <h1 className="text-[20px] font-bold text-[#171717] mb-1">
+        <div className="p-6 sm:p-8">
+          <h1 className="mb-1 text-xl font-semibold tracking-[-0.02em]">
             {isSignup ? "Check your AI visibility" : "Welcome back"}
           </h1>
-          <p className="text-[13px] text-[#777773] mb-7">
+          <p className="mb-6 text-sm text-muted-foreground">
             {isSignup
               ? "Create your Customers.Direct account to get started."
               : "Log in to your Customers.Direct dashboard."}
           </p>
 
-          {/* OAuth callback failure notice */}
-          {googleFailed && (
-            <div
-              className="text-[12px] text-[#92400E] bg-[#FFFBEB] border border-[#FDE68A] rounded-lg px-3.5 py-3 mb-4 flex flex-col gap-1.5"
-              role="alert"
-            >
-              <p className="font-semibold">Sign-in couldn&apos;t complete — please try again.</p>
-              <p>
-                Google authentication succeeded, but the session couldn&apos;t be saved.
-                This is usually temporary.{" "}
-                <button
-                  type="button"
-                  onClick={handleGoogle}
-                  className="underline font-semibold hover:no-underline"
-                >
-                  Retry with Google
-                </button>{" "}
-                or{" "}
-                <Link href="/contact?topic=support" className="underline font-semibold hover:no-underline">
-                  contact support
-                </Link>.
-              </p>
-            </div>
-          )}
+          <AuthNotices google={google} linkNotice={linkNotice} onRetryGoogle={handleGoogle} />
 
-          {/* Google button */}
-          <button
-            type="button"
-            onClick={handleGoogle}
-            disabled={loading !== null}
-            className="w-full flex items-center justify-center gap-2.5 bg-white border border-[#E5E5E1] rounded-lg py-2.5 text-[13px] font-medium text-[#171717] hover:bg-[#F5F5F2] hover:border-[#D4D4CF] transition-colors disabled:opacity-60 mb-5 active:scale-[0.98]"
-          >
-            {loading === "google" ? (
-              <Loader2 size={16} className="animate-spin text-[#777773]" aria-hidden="true" />
-            ) : (
-              <GoogleIcon />
-            )}
+          <Button type="button" variant="outline" size="lg" onClick={handleGoogle} disabled={loading !== null} className="w-full bg-surface">
+            {loading === "google" ? <Loader2 className="animate-spin text-muted-foreground" aria-hidden="true" /> : <GoogleIcon />}
             Continue with Google
-          </button>
+          </Button>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3 mb-5">
-            <div className="h-px bg-[#EEEEEA] flex-1" />
-            <span className="text-[11px] text-[#A3A3A0] font-medium">or continue with email</span>
-            <div className="h-px bg-[#EEEEEA] flex-1" />
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">or continue with email</span>
+            <div className="h-px flex-1 bg-border" />
           </div>
 
-          {/* Email form */}
           <form onSubmit={handleEmailAuth} className="flex flex-col gap-4">
-            <div>
-              <label htmlFor="email" className="block text-[11px] font-semibold text-[#777773] uppercase tracking-wide mb-1.5">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full border border-[#E5E5E1] rounded-lg px-3.5 py-2.5 text-[13px] text-[#171717] bg-white placeholder:text-[#A3A3A0] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717] transition-colors"
-                placeholder="you@business.com"
-              />
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="password" className="block text-[11px] font-semibold text-[#777773] uppercase tracking-wide">
-                  Password
-                </label>
-                {!isSignup && (
-                  <Link href="/forgot-password" className="text-[11px] text-[#A3A3A0] hover:text-[#777773] transition-colors">
+            <AuthField
+              id="email"
+              label="Email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@business.com"
+              invalid={emailInvalid}
+              aria-describedby={emailInvalid ? alertId : undefined}
+            />
+            <AuthField
+              ref={passwordRef}
+              id="password"
+              label="Password"
+              type="password"
+              required
+              autoComplete={isSignup ? "new-password" : "current-password"}
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                // An old "needs..." message goes as soon as the password changes; the checklist shows what is left.
+                setPasswordError(null);
+              }}
+              error={passwordError}
+              invalid={passwordInvalid}
+              aria-describedby={[passwordInvalid ? alertId : null, isSignup ? "password-rules" : null].filter(Boolean).join(" ") || undefined}
+              below={isSignup ? <PasswordChecklist id="password-rules" value={password} /> : null}
+              aside={
+                !isSignup && (
+                  <Link href="/forgot-password" prefetch={false} className={authLinkClass}>
                     Forgot password?
                   </Link>
-                )}
-              </div>
-              <input
-                id="password"
-                type="password"
-                required
-                minLength={8}
-                autoComplete={isSignup ? "new-password" : "current-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-[#E5E5E1] rounded-lg px-3.5 py-2.5 text-[13px] text-[#171717] bg-white placeholder:text-[#A3A3A0] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717] transition-colors"
-                placeholder="••••••••"
-              />
-            </div>
+                )
+              }
+            />
 
-            {error && error !== "google_failed" && (
-              <div className="text-[12px] text-[#991B1B] bg-[#FEF2F2] border border-[#FECACA] rounded-lg px-3.5 py-2.5" role="alert">
+            {error && (
+              <AuthAlert id={alertId} tone="error">
                 {error}
-              </div>
+              </AuthAlert>
             )}
-            {message && (
-              <div className="text-[12px] text-[#166534] bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg px-3.5 py-2.5" role="status">
-                {message}
-              </div>
-            )}
+            {message && <AuthAlert tone="success">{message}</AuthAlert>}
 
-            <button
-              type="submit"
-              disabled={loading !== null}
-              className="w-full flex items-center justify-center gap-2 bg-[#171717] text-white font-semibold py-2.5 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[13px] disabled:opacity-60 active:scale-[0.98]"
-            >
-              {loading === "email" && <Loader2 size={15} className="animate-spin" aria-hidden="true" />}
-              {isSignup ? "Create Account" : "Log In"}
-              {loading !== "email" && <ArrowRight size={13} aria-hidden="true" />}
-            </button>
+            <Button type="submit" size="lg" disabled={loading !== null} className="w-full">
+              {loading === "email" && <Loader2 className="animate-spin" aria-hidden="true" />}
+              {isSignup ? "Create account" : "Log in"}
+            </Button>
           </form>
 
-          {/* Support link */}
-          <p className="text-center text-[11.5px] text-[#A3A3A0] mt-5">
-            Having trouble signing in?{" "}
-            <Link href="/contact?topic=support" className="text-[#777773] underline hover:text-[#171717] transition-colors font-medium">
+          {isSignup && (
+            <p data-testid="signup-terms" className="mt-4 text-center text-[length:calc(13px*var(--px,1))] text-muted-foreground">
+              By signing up with email or Google, you agree to our{" "}
+              <Link href="/terms" prefetch={false} className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" prefetch={false} className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
+                Privacy policy
+              </Link>
+              .
+            </p>
+          )}
+
+          <p className="mt-5 text-center text-[length:calc(13px*var(--px,1))] text-muted-foreground">
+            {isSignup ? "Having trouble signing up?" : "Having trouble logging in?"}{" "}
+            {/* No prefetch on the login and signup pages: each view rendered these pages on the server for nothing. */}
+            <Link href="/contact?topic=support" prefetch={false} className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
               Contact support
             </Link>
           </p>
         </div>
-      </div>
+      </AuthCard>
 
-      <p className="text-center text-[11.5px] text-[#A3A3A0] mt-4">
-        14-day free trial · Credit card required
-      </p>
+      {/* The trial line is for new accounts only; people logging in already have one (polish sweep, BUG-302). */}
+      {isSignup && (
+        <p className="mt-4 text-center text-[length:calc(13px*var(--px,1))] text-muted-foreground">
+          7-day free trial. Credit card required.
+        </p>
+      )}
     </div>
   );
 }
