@@ -1,6 +1,8 @@
 # Go-live runbook (Netlify path)
 
-Step by step checklist for going live (B-80) and the launch rehearsal (B-83), on Netlify as decided in D-41. Plan: MVP_SPEC 20, D-70. Written 2026-10-01 from the code on `mvp`.
+Step by step checklist for going live (B-80) and the launch rehearsal (B-83), on Netlify as decided in D-41. Plan: MVP_SPEC 20, D-70. Written 2026-10-01 from the code on `mvp`; updated 2026-11-19 for `release/go-live` (pull request #157 into `main`) after a full rehearsal on a copy of live (step 4).
+
+**Order matters (checked 2026-11-19).** The old site on `main` cannot run on the migrated database: 047 removes the direct writes it makes with the customer's own login, and 082 hides `visibility_results.cost_usd`, so its reads of answers fail. Push the migrations and publish the new site together (step 9), and plan a rollback as a database restore (step 12).
 
 Each step says who does it: **Dev** (the developer), **Jordan**, or **Both**. Tick each box as you go and write the time next to it. Never paste a key or secret into this file, a pull request, a chat or a ticket. Values live in the password manager (B-01).
 
@@ -12,8 +14,8 @@ Live Supabase project: `wsxusvapciexemfvtadm`. Production domain: `customers.dir
 - [ ] **Jordan**: Stripe live account ready in his LLC (D-40), final prices confirmed (D-21, D-22), tax registration answered (MVP_SPEC 11.2).
 - [ ] **Jordan**: decisions still open in DECISIONS.md "Ask Jordan" answered, including beta users (D-69, B-81), Terms and Privacy (D-78), and Places terms (D-73, see `places-compliance.md`).
 - [ ] **Jordan**: who controls DNS for `customers.direct`, and access for the email records (F-12).
-- [ ] **Dev**: every task B-75 to B-82 and B-84 merged into `mvp`; CI, evals and end-to-end tests green on `mvp`.
-- [ ] **Dev**: the `mvp` staging deploy tested logged in (F-02) and a real scan run through the Netlify worker (F-37).
+- [x] **Dev**: `release/go-live` has every task; CI, evals and the build green on pull request #157 (2026-11-19, Next.js 16.4.6).
+- [x] **Dev**: deploy preview 157 tested logged in, customer and admin, at 1440px and 390px (2026-11-19).
 - [ ] **Both**: pick a quiet time. Tell existing users if B-81 says so.
 
 ## 1. Environment variables (Netlify, production context)
@@ -65,6 +67,8 @@ Must NOT be set in production (test and local only): `PLACES_FIXTURES`, `ONBOARD
 
 Old names from the previous app (`ADMIN_PIN`, `ADMIN_SESSION_SECRET`, `GEO_CRON_SECRET`): the new app does not read them. Leave them until the rollback window in step 11 ends, then delete them.
 
+Production on 2026-11-19 (names read with the Netlify CLI) still lacks: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (Jordan, step 7), `WORKER_SECRET`, `EMAIL_UNSUBSCRIBE_SECRET` (make new random ones; never reuse the preview's), `ADMIN_EMAILS` (set for previews only), `EMAIL_FROM` (step 11). `WORKER_URL` and the AI, Places, Firecrawl and Resend keys are set.
+
 - [ ] **Dev**: all "required" and "needed" names set for Production. Check the list against `src/lib/env.ts`.
 - [ ] **Dev**: none of the "must not" names set for Production.
 
@@ -72,13 +76,16 @@ Old names from the previous app (`ADMIN_PIN`, `ADMIN_SESSION_SECRET`, `GEO_CRON_
 
 Backup plan and restore steps: `BACKUPS.md` (proposal, needs Jordan's approval).
 
-- [ ] **Dev**: with the user's approval, link the CLI to live and take both dumps (keep them out of git, store them with the password manager notes):
+- [ ] **Dev**: with the user's approval, take the dumps from a scratch folder linked to live, never the repo (keep them out of git, folder mode 700). The CLI's login makes a temporary database role, so no database password is needed:
 
 ```
-supabase link --project-ref wsxusvapciexemfvtadm
-supabase db dump --linked -f backup-<date>.sql
-supabase db dump --linked --data-only -f backup-<date>-data.sql
+supabase link --project-ref wsxusvapciexemfvtadm --workdir <scratch>
+supabase db dump --linked --workdir <scratch> -f live-schema.sql
+supabase db dump --linked --workdir <scratch> --data-only --use-copy -f live-data.sql   # includes auth.users
+supabase db dump --linked --workdir <scratch> --role-only -f live-roles.sql
 ```
+
+First backup taken 2026-11-19 (schema, data with the 20 logins, roles, plus a JSON copy of every table) in `~/customers-live-backups/2026-11-19/` on the developer's machine. Take a fresh one right before the push.
 
 - [ ] **Dev**: note the row counts for the move check: `npm run verify:migration -- --linked --baseline --save before.json`.
 - [ ] **Jordan**: confirm a Supabase dashboard backup exists for today (Database, Backups).
@@ -94,22 +101,30 @@ Live had migrations 001 to 020 applied by hand, so it has no migration history. 
 supabase migration repair --linked --status applied 001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017 018 019 020
 ```
 
-- [ ] **Dev**: `supabase migration list --linked` shows 001 to 020 applied on remote and 021 to 043 not applied. `npm run db:drift` shows no drift for 001 to 020 (see `supabase/migrations/README.md`, Baseline).
+- [ ] **Dev**: `supabase migration list --linked` shows 001 to 020 applied on remote and 021 to 098 not applied. `npm run db:drift` shows no drift for 001 to 020 (see `supabase/migrations/README.md`, Baseline).
 
-## 4. Apply migrations 021 onward
+Checked 2026-11-19: live has no migration history table, no `pg_cron` or `pg_net`, an empty Vault, and none of main's tables (`video_ad_orders`, `directory_apps`, `app_reviews`, `newsletter_events`). So the 024 to 029 repair in `supabase/migrations/README.md` is not needed: 071 to 076 run like the rest.
 
-All are additive (D-43), so the current live site keeps working while they run. `supabase db push` applies them in order and stops at the first error.
+## 4. Apply migrations 021 to 098
 
-- [ ] **Dev**: `supabase db push` (applies 021 to 043).
+`supabase db push` applies them in order and stops at the first error. They do not all leave the old site working (see the top), so run this inside step 9, not days before.
+
+**Rehearsed 2026-11-19** on a throwaway local Supabase stack loaded with the live dump: repair 001 to 020, `db push --dry-run` listed the 78 files 021 to 098, and the push applied all 78 with no error. After it: 20 users, 20 profiles, 20 agencies (19 real, 1 `is_test`), 18 businesses, all with an agency; questions, answers and competitors unchanged; no table without RLS; no function open to anon or authenticated; 12 cron jobs. Existing accounts opened every page on the new app with no errors.
+
+What existing customers get from the backfill (025): every agency is `trialing` with no trial end date and 0 credits. They see their saved results but cannot run a scan until the beta users decision (D-69, B-81) gives them credits or a plan.
+
+- [ ] **Dev**: `supabase db push --linked` (applies 021 to 098).
 - [ ] **Dev**: checks after the push:
-  - `supabase migration list --linked` shows 021 to 043 applied.
+  - `supabase migration list --linked` shows 021 to 098 applied.
   - 025 moved existing users: `npm run verify:migration -- --linked --compare before.json --save after.json` passes (counts match, every business has an agency).
   - 029 made the pg_cron jobs: see step 6.
   - 034 made `topup_packs`: continue with step 7 (Stripe catalog sync).
   - 035: `npm run db:types` against live gives an empty diff.
   - `npm run check:rls` passes and `select tablename from pg_tables where schemaname = 'public' and not rowsecurity;` returns no rows.
+  - `scripts/check-function-grants.sql` returns no rows (091).
+  - `select has_table_privilege('service_role', 'public.scan_jobs', 'select');` is true (094).
 - [ ] **Dev**: if a migration fails, stop. Do not retry by hand. Read the error, fix it in a new migration on a branch, and restore from step 2 only if data was damaged.
-- [ ] **Dev**: the approved question library (B-32) is in a migration and was applied with the push: `select count(*) from question_library where version = 1;` is about 400. If B-32 is not approved yet, onboarding still works with questions the AI writes; note it in the launch note.
+- [ ] **Dev**: the question library is not in a migration. Seed it with `npm run question-library:seed` against live (approval needed), then `select count(*) from question_library;`. Until then onboarding still works with questions the AI writes.
 - [ ] **Dev**: run `supabase/cleanup/places-cleanup.sql` (step 1 preview, then step 2) with approval (B-79, `places-compliance.md`).
 
 ## 5. Supabase Vault secrets
@@ -128,13 +143,15 @@ The pg_cron jobs read these. Set once in the live SQL editor (the commands are i
 
 ## 6. pg_cron jobs that must be running
 
-All times UTC. Check with `select jobname, schedule, active from cron.job order by jobname;`. There must be 10 active jobs:
+All times UTC. Check with `select jobname, schedule, active from cron.job order by jobname;`. There must be 12 active jobs (the rehearsal made exactly these):
 
 | Job | When | Does |
 |---|---|---|
 | `call-scan-worker` | every minute | Calls the worker when a scan job is waiting |
 | `check-system-alerts` | every 15 minutes | Checks for problems and emails the admins |
 | `email-low-credits` | every 30 minutes | Low credit emails |
+| `email-price-changes` | hourly at :20 | Price change notices |
+| `release-orphan-holds` | every 10 minutes, at :05 | Releases credit holds left by scans that never started |
 | `email-weekly-report` | Mondays, every 15 minutes, 13:00 to 17:45 | Weekly report emails |
 | `enqueue-due-scans` | 02:00 daily | Queues scheduled scans (test agencies only until step 10) |
 | `expire-grants` | 01:00 daily | Expires old credit grants |
@@ -143,7 +160,7 @@ All times UTC. Check with `select jobname, schedule, active from cron.job order 
 | `purge-rate-limit-hits` | hourly at :15 | Deletes old rate limit rows |
 | `reset-stuck-jobs` | every 10 minutes | Frees jobs stuck in "running" |
 
-- [ ] **Dev**: all 10 present and active.
+- [ ] **Dev**: all 12 present and active. `enqueue-due-scans` runs `enqueue_due_scans(false)`: test agencies only, so no real AI money is spent until step 10.
 
 ## 7. Stripe live switch
 
@@ -153,7 +170,7 @@ Details: `src/modules/billing/README.md`, "First-time setup" and "Live".
 - [ ] **Jordan**: create two restricted live keys: the catalog key (Products Write, Prices Write, used only by the sync script, never in Netlify) and the app key (`STRIPE_SECRET_KEY`, permissions listed in the billing README).
 - [ ] **Both**: confirm prices in `plans` and `topup_packs` on live match D-21 and D-22.
 - [ ] **Dev**: with `.env.local` pointed at live and approval, run the catalog sync with the live catalog key: dry run, then `APPLY=1`, then `npm run stripe:catalog-check` must pass (add `STRIPE_LIVE=1`; the script refuses a sandbox key on live).
-- [ ] **Jordan**: add the live webhook endpoint `https://<domain>/api/stripe/webhook` with exactly these 8 events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.trial_will_end`. Give the signing secret to the developer for `STRIPE_WEBHOOK_SECRET`.
+- [ ] **Jordan**: add the live webhook endpoint `https://<domain>/api/stripe/webhook` with exactly these 9 events: `charge.refunded`, `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.trial_will_end`. Give the signing secret to the developer for `STRIPE_WEBHOOK_SECRET`.
 - [ ] **Dev**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` in Netlify are the live ones (`rk_live_`, `pk_live_`).
 
 ## 8. Supabase Auth and Google login
@@ -161,13 +178,17 @@ Details: `src/modules/billing/README.md`, "First-time setup" and "Live".
 - [ ] **Dev**: Supabase dashboard (live), Authentication, URL configuration: Site URL `https://<domain>`. Redirect URLs include `https://<domain>/auth/callback` and `https://<domain>/reset-password` (the reset link uses the page's own address). Add the `www` address too if the site answers on it.
 - [ ] **Jordan** (owner of the Google Cloud project): the Google OAuth client's authorized redirect URI is the Supabase callback `https://wsxusvapciexemfvtadm.supabase.co/auth/v1/callback`, and the authorized JavaScript origin includes `https://<domain>`.
 - [ ] **Dev**: Supabase Auth, Google provider enabled with that client.
+- [ ] **Dev** (or Jordan): Supabase Auth, Providers, Email, Password requirements: minimum length 8, "Lowercase, uppercase letters, digits and symbols", and "Prevent use of leaked passwords" on. This matches the app's rule (`src/lib/password-rules.ts`); without it the rule holds only in our forms, not for someone calling Supabase Auth directly.
 - [ ] **Both**: decide who sends Supabase's own emails (confirm signup, reset password). Today they use Supabase's built in sender, which is not meant for production volume. Suggest custom SMTP through Resend. Open question.
 
-## 9. Deploy: merge `mvp` into `main`
+## 9. Deploy: merge `release/go-live` into `main`, with the migrations
 
-- [ ] **Dev**: `main` merged into `mvp` first, all checks green on the pull request `mvp` into `main`.
-- [ ] **Dev**: Netlify auto publish from `main` is on (D-45).
-- [ ] **Dev**: merge the pull request. Netlify builds and publishes it. The build also bundles the worker as the background function `scan-worker-background` (`scripts/build-worker.mjs`, `netlify.toml`).
+Pull request #157. `release/go-live` already has everything from `main` (0 behind on 2026-11-19); check again on the day. This order keeps the time the site is broken to the few minutes of the push:
+
+- [ ] **Dev**: in Netlify, Deploys, lock the published deploy ("Stop auto publishing"). `main` still builds, but nothing is published.
+- [ ] **Dev**: mark #157 ready and merge it. Wait for the production build to finish (Deploy log: Node 24, Functions list shows `scan-worker-background`, built by `scripts/build-worker.mjs`, `netlify.toml`). Do not publish yet.
+- [ ] **Dev**: fresh backup (step 2), repair (step 3), push (step 4), Vault secrets (step 5).
+- [ ] **Dev**: publish the new deploy, then unlock auto publishing (D-45).
 - [ ] **Dev**: in the Netlify deploy log, the build passed on Node 24 (`netlify.toml`) and the Functions list shows `scan-worker-background`.
 - [ ] **Dev**: `curl -s -o /dev/null -w "%{http_code}" -X POST https://<domain>/.netlify/functions/scan-worker-background` returns 202 (Netlify answers background functions at once). Then check the function log shows 401 for the missing secret.
 - [ ] **Dev**: in the live SQL editor, `select id, status_code, left(content, 200), created from net._http_response order by created desc limit 5;` shows recent calls with no errors once a job is queued.
@@ -196,11 +217,12 @@ The site already lives on Netlify at `customers.direct`, so the Netlify path nee
 
 Use this if the new site is broken for customers and cannot be fixed within an hour.
 
-1. **Dev**: in Netlify, Deploys, open the last deploy from before the merge and press "Publish deploy". The old site is back within a minute. Then revert the merge on `main` with a pull request so the next build does not bring it back.
-2. **Dev**: stop real scans: `select cron.schedule('enqueue-due-scans', '0 2 * * *', 'select public.enqueue_due_scans(false)');`.
-3. **Jordan**: in Stripe live, disable the webhook endpoint. When the new site is back, re-enable it and resend the events missed in between (Stripe dashboard, Events, Resend, or `stripe events resend <event id>`). Each handler is idempotent, so a resend never grants twice.
-4. Database: leave it. Migrations 021 onward only add tables and columns, and 025 reads the old tables without changing them, so the old site works on it. Restore the step 2 backup only if data was damaged, and only with approval (it loses everything written since).
-5. Keep the old Netlify deploys for at least 7 days after launch.
+Prefer a fix forward: most problems are a missing setting (steps 1, 5, 7, 8), not the code.
+
+1. **Dev**: stop real scans: `select cron.schedule('enqueue-due-scans', '0 2 * * *', 'select public.enqueue_due_scans(false)');`.
+2. **Jordan**: in Stripe live, disable the webhook endpoint. When the new site is back, re-enable it and resend the events missed in between (Stripe dashboard, Events, Resend, or `stripe events resend <event id>`). Each handler is idempotent, so a resend never grants twice.
+3. Going back to the old site needs both, with approval: restore the step 2 backup into live (it loses everything written since), then in Netlify publish the last deploy from before the merge and revert the merge on `main` with a pull request. Publishing the old deploy alone does not work: the old site cannot run on the migrated database (see the top).
+4. Keep the old Netlify deploys for at least 7 days after launch.
 
 ## 13. Post-launch checks (B-83)
 
@@ -210,7 +232,7 @@ Same day, on production, as an internal account:
 - [ ] **Dev**: full Playwright suite against production with an internal `is_test` agency.
 - [ ] **Both**: walk every phase's demo checklist on desktop and phone (`docs/build-plan/`), including the Phase 10 list: welcome email, share link, PDF, password change, delete a test business, "How we measure", Terms and Privacy, admin view of the new customer.
 - [ ] **Dev**: admin settings page (`/internal/admin/settings`) shows every key set, Stripe live, Resend set, the worker's last run and pg_cron's last run.
-- [ ] **Dev**: the 10 pg_cron jobs ran without errors (`cron_job_status()`, or `cron.job_run_details`).
+- [ ] **Dev**: the 12 pg_cron jobs ran without errors (`cron_job_status()`, or `cron.job_run_details`).
 - [ ] **Dev**: alerts work: the admin Overview shows no unexpected alerts, and one alert email has arrived at some point (for example after a test failure).
 - [ ] **Jordan**: backups are on for the live project as approved in `BACKUPS.md` (plan, option A or B), and the first restore drill is logged there.
 - [ ] **Dev**: every item in "Ask Jordan" in DECISIONS.md answered.
@@ -222,5 +244,6 @@ Same day, on production, as an internal account:
 - Supabase Auth emails use the built in sender (step 8). Needs a decision.
 - Done: Netlify, CI and `package.json` now use Node 24, the active LTS. Supabase JS needs 22 or later, so Node 20 no longer fit.
 - Done (2026-10-14): `BETA_FREE_ACCESS`, `TRIAL_ENABLED` and `DATAFORSEO_*` are removed from the code (MVP_SPEC 14); delete them from Netlify if set. `BILLING_ENABLED` is removed too (nothing read it; billing is always on).
-- Done: `supabase/migrations/README.md` "Pending for live" lists every file live needs, 021 to 043.
+- Done: `supabase/migrations/README.md` "Pending for live" lists every file live needs, 021 to 098.
+- Done (2026-11-19): Next.js 16.4.6, zod 4.6.7 and undici 7.30.2 fix the critical and high advisories in code the site runs. `npm audit` still lists high ones in build-time tools only (shadcn and react-email CLIs, eslint).
 - Backups on production (B-83): proposal in `BACKUPS.md`, waiting for Jordan's approval.
