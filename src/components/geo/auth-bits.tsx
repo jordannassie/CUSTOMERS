@@ -31,9 +31,11 @@ type FieldProps = React.ComponentProps<"input"> & {
   invalid?: boolean;
   /** Extra element on the label row, such as a "Forgot password?" link. */
   aside?: React.ReactNode;
+  /** Under the field, after the hint or error: the password checklist. */
+  below?: React.ReactNode;
 };
 
-export function AuthField({ id, label, hint, error, invalid, aside, "aria-describedby": describedBy, ...input }: FieldProps) {
+export function AuthField({ id, label, hint, error, invalid, aside, below, "aria-describedby": describedBy, ...input }: FieldProps) {
   const errorId = error ? `${id}-error` : undefined;
   // The error repeats the rule, so the hint steps aside while it shows.
   const hintId = hint && !error ? `${id}-hint` : undefined;
@@ -55,6 +57,7 @@ export function AuthField({ id, label, hint, error, invalid, aside, "aria-descri
           {hint}
         </p>
       ) : null}
+      {below}
     </div>
   );
 }

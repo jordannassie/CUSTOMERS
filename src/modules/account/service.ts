@@ -32,7 +32,7 @@ export function authUpdateError(code: string | undefined, fallback: string): str
     case "same_password":
       return "That is your current password. Choose a new one.";
     case "weak_password":
-      return "Choose a stronger password: at least 8 characters, not a common one.";
+      return "Choose a stronger password: at least 8 characters with an uppercase letter, a lowercase letter, a number and a symbol, and not one that has shown up in data leaks.";
     case "email_exists":
       return "Another account already uses that email.";
     case "email_address_invalid":

@@ -1,5 +1,8 @@
 "use client";
 
+import { passwordError } from "@/lib/password-rules";
+import { passwordRefusal } from "./auth-flow";
+import { PasswordChecklist } from "@/components/ui/password-checklist";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -23,8 +26,9 @@ export default function ResetPasswordForm() {
     setError(null);
     setFieldError(null);
 
-    if (password.length < 8) {
-      setFieldError({ field: "password", text: "Password must be at least 8 characters." });
+    const weak = passwordError(password);
+    if (weak) {
+      setFieldError({ field: "password", text: weak });
       passwordRef.current?.focus();
       return;
     }
@@ -69,9 +73,13 @@ export default function ResetPasswordForm() {
             required
             autoComplete="new-password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            hint="At least 8 characters"
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (fieldError?.field === "password") setFieldError(null);
+            }}
             error={fieldError?.field === "password" ? fieldError.text : null}
+            aria-describedby="password-rules"
+            below={<PasswordChecklist id="password-rules" value={password} />}
           />
           <AuthField
             ref={confirmRef}
@@ -117,5 +125,6 @@ function resetErrorText(message: string): string {
   const msg = message.toLowerCase();
   if (msg.includes("session") || msg.includes("expired") || msg.includes("jwt")) return EXPIRED;
   if (msg.includes("different from the old")) return "Choose a password you have not used for this account before.";
+  if (msg.includes("password")) return passwordRefusal(msg);
   return "We couldn't set your password. Try again.";
 }

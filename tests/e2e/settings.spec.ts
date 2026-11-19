@@ -191,9 +191,14 @@ test("change the password, needing the current one", async ({ page }) => {
   const s = await logIn(page);
   await page.getByRole("button", { name: "Change password" }).click();
   const form = page.getByRole("form", { name: "Change password" });
+  // A weak new password is stopped before anything is sent, with what it still needs (2026-11-18).
   await form.getByLabel("Current password").fill("not it");
-  await form.getByLabel("New password").fill("a brand new password");
-  await form.getByLabel("Type it again").fill("a brand new password");
+  await form.getByLabel("New password").fill("password");
+  await form.getByLabel("Type it again").fill("password");
+  await form.getByRole("button", { name: "Change password" }).click();
+  await expect(form.getByText("Your password needs an uppercase letter, a number and a symbol, like ! or #.")).toBeVisible();
+  await form.getByLabel("New password").fill("A brand new password 1!");
+  await form.getByLabel("Type it again").fill("A brand new password 1!");
   await form.getByRole("button", { name: "Change password" }).click();
   // BUG-F: the error sits under the field it belongs to.
   await expect(form.getByLabel("Current password")).toHaveAccessibleDescription("Your current password is not right. Try again.", {
@@ -204,7 +209,7 @@ test("change the password, needing the current one", async ({ page }) => {
   await form.getByLabel("Type it again").fill("a different password");
   await form.getByRole("button", { name: "Change password" }).click();
   await expect(form.getByLabel("Type it again")).toHaveAccessibleDescription("The new passwords don't match.");
-  await form.getByLabel("Type it again").fill("a brand new password");
+  await form.getByLabel("Type it again").fill("A brand new password 1!");
 
   await form.getByLabel("Current password").fill(s.password);
   await form.getByRole("button", { name: "Change password" }).click();

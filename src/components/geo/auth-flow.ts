@@ -22,12 +22,24 @@ export function nextFromUrl(signup = false) {
 /** What the form shows for a failed sign-up or login: a form alert, which fields it is about, or a password note. */
 export type AuthFailure = { error?: string; invalid?: "email" | "password" | "both"; passwordError?: string };
 
+/**
+ * Supabase's own refusal of a new password, in our words: a known leaked password ("known to be weak", leaked password
+ * protection) or one that misses the rule set in Supabase Auth (owner, 2026-11-18). Shared with reset password.
+ */
+export function passwordRefusal(message: string): string {
+  const msg = message.toLowerCase();
+  if (msg.includes("weak") || msg.includes("pwned") || msg.includes("leak") || msg.includes("easy to guess")) {
+    return "That password has shown up in data leaks, so it isn't safe. Choose a different one.";
+  }
+  return "Use at least 8 characters, with an uppercase letter, a lowercase letter, a number and a symbol.";
+}
+
 export function signupFailure(message: string): AuthFailure {
   const msg = message.toLowerCase();
   if (msg.includes("already registered") || msg.includes("already been registered") || msg.includes("user already")) {
     return { error: "An account with this email already exists. Try logging in instead.", invalid: "email" };
   }
-  if (msg.includes("password")) return { passwordError: "Password must be at least 8 characters." };
+  if (msg.includes("password")) return { passwordError: passwordRefusal(msg) };
   return { error: "We couldn't create your account. Try again." };
 }
 

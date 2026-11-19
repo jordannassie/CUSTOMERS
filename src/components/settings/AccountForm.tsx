@@ -5,7 +5,8 @@ import { Loader2, MailCheck } from "lucide-react";
 import { toast } from "sonner";
 import type { ActionResult } from "@/modules/auth";
 import type { PasswordChange } from "@/modules/account/actions";
-import { PASSWORD_MIN } from "@/modules/account/schema";
+import { PasswordChecklist } from "@/components/ui/password-checklist";
+import { passwordError } from "@/lib/password-rules";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -161,7 +162,8 @@ function PasswordForm({ changePassword, onClose }: { changePassword: ChangePassw
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (fields.show(password !== confirm ? { confirm: "The new passwords don't match." } : {})) return;
+    const weak = passwordError(password);
+    if (fields.show(weak ? { password: weak } : password !== confirm ? { confirm: "The new passwords don't match." } : {})) return;
     start(async () => {
       const result = await changePassword({ password, currentPassword: current, nonce: code ?? undefined });
       if (!result.ok) return showFailure(result, fields, PASSWORD_FIELDS, setError);
@@ -190,8 +192,7 @@ function PasswordForm({ changePassword, onClose }: { changePassword: ChangePassw
         id="new-password"
         label="New password"
         autoComplete="new-password"
-        minLength={PASSWORD_MIN}
-        hint={`At least ${PASSWORD_MIN} characters.`}
+        below={<PasswordChecklist id="new-password-rules" value={password} />}
         value={password}
         onChange={setPassword}
         fields={fields}

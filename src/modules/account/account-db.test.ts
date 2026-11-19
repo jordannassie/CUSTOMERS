@@ -223,9 +223,16 @@ describe("change email and password (ACC-03)", () => {
   it("needs the current password, then changes it", async () => {
     const owner = await createUser("password");
     await signIn(owner);
+    // A weak new password is refused with what it still needs (2026-11-18).
+    expect(await actions.changePassword({ password: "a new password", currentPassword: owner.password })).toMatchObject({
+      ok: false,
+      status: 400,
+      field: "password",
+      error: "Your password needs an uppercase letter and a number.",
+    });
     expect(await actions.changePassword({ password: "a new password", currentPassword: "wrong" })).toMatchObject({ ok: false, status: 400 });
-    expect(await actions.changePassword({ password: "a new password", currentPassword: owner.password })).toEqual({ ok: true, data: { step: "done" } });
-    await expect(signIn({ ...owner, password: "a new password" })).resolves.toBeTruthy();
+    expect(await actions.changePassword({ password: "A new password 1!", currentPassword: owner.password })).toEqual({ ok: true, data: { step: "done" } });
+    await expect(signIn({ ...owner, password: "A new password 1!" })).resolves.toBeTruthy();
   });
 
   it("asks Supabase to confirm a new email and keeps the old one until then", async () => {

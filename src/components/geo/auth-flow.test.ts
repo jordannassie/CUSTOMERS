@@ -9,7 +9,12 @@ describe("sign-up failures", () => {
     expect(signupFailure("User already registered")).toEqual({ error: "An account with this email already exists. Try logging in instead.", invalid: "email" });
   });
   it("puts a password problem under the password field", () => {
-    expect(signupFailure("Password should be at least 8 characters")).toEqual({ passwordError: "Password must be at least 8 characters." });
+    expect(signupFailure("Password should be at least 8 characters")).toEqual({
+      passwordError: "Use at least 8 characters, with an uppercase letter, a lowercase letter, a number and a symbol.",
+    });
+    expect(signupFailure("Password is known to be weak and easy to guess, please choose a different one.")).toEqual({
+      passwordError: "That password has shown up in data leaks, so it isn't safe. Choose a different one.",
+    });
   });
   it("falls back to a general message", () => {
     expect(signupFailure("network down")).toEqual({ error: "We couldn't create your account. Try again." });

@@ -30,6 +30,8 @@ export function PasswordInput<K extends string>(props: {
   fields: Fields<K>;
   hint?: string;
   minLength?: number;
+  /** Under the field: the password checklist, whose id is `${id}-rules`. */
+  below?: React.ReactNode;
 }) {
   const { name, id, fields } = props;
   return (
@@ -46,13 +48,14 @@ export function PasswordInput<K extends string>(props: {
           props.onChange(e.target.value);
           fields.clear(name);
         }}
-        {...fields.fieldProps(name, props.hint ? `${id}-hint` : undefined)}
+        {...fields.fieldProps(name, props.hint ? `${id}-hint` : props.below ? `${id}-rules` : undefined)}
       />
       {props.hint && (
         <p id={`${id}-hint`} className="text-xs text-text-hint">
           {props.hint}
         </p>
       )}
+      {props.below}
       <FieldMessage id={fields.idOf(name)} message={fields.errors[name]} />
     </div>
   );

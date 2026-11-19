@@ -1,5 +1,7 @@
 "use client";
 
+import { passwordError as passwordRuleError } from "@/lib/password-rules";
+import { PasswordChecklist } from "@/components/ui/password-checklist";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,7 +12,6 @@ import { AuthAlert, AuthCard, AuthField, AuthLogo, GoogleIcon, authLinkClass } f
 import { logInWithEmail, signUpWithEmail, startGoogleSignIn, type AuthFailure } from "./auth-flow";
 import { AuthNotices } from "./auth-notices";
 
-const MIN_PASSWORD = 8;
 
 interface AuthFormProps {
   defaultMode?: "login" | "signup";
@@ -86,8 +87,10 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
     setMessage(null);
     setPasswordError(null);
     setInvalid(null);
-    if (password.length < MIN_PASSWORD) {
-      setPasswordError("Password must be at least 8 characters.");
+    // The password rule applies to new passwords only: logging in with an older, simpler one still works.
+    const weak = isSignup ? passwordRuleError(password) : null;
+    if (weak) {
+      setPasswordError(weak);
       passwordRef.current?.focus();
       return;
     }
@@ -170,11 +173,15 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
               required
               autoComplete={isSignup ? "new-password" : "current-password"}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              hint={isSignup ? "At least 8 characters" : undefined}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                // An old "needs..." message goes as soon as the password changes; the checklist shows what is left.
+                setPasswordError(null);
+              }}
               error={passwordError}
               invalid={passwordInvalid}
-              aria-describedby={passwordInvalid ? alertId : undefined}
+              aria-describedby={[passwordInvalid ? alertId : null, isSignup ? "password-rules" : null].filter(Boolean).join(" ") || undefined}
+              below={isSignup ? <PasswordChecklist id="password-rules" value={password} /> : null}
               aside={
                 !isSignup && (
                   <Link href="/forgot-password" prefetch={false} className={authLinkClass}>

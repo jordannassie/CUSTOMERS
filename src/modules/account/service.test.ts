@@ -30,10 +30,11 @@ describe("inputs", () => {
     expect(changeEmailInput.safeParse({ email: "not-an-email" }).success).toBe(false);
   });
 
-  it("needs 8 characters for a new password and a numeric code", () => {
+  it("needs a strong new password (the shared rule, 2026-11-18) and a numeric code", () => {
     expect(changePasswordInput.safeParse({ password: "short" }).success).toBe(false);
-    expect(changePasswordInput.safeParse({ password: "long enough", nonce: "123456" }).success).toBe(true);
-    expect(changePasswordInput.safeParse({ password: "long enough", nonce: "abc" }).success).toBe(false);
+    expect(changePasswordInput.safeParse({ password: "long enough" }).success).toBe(false);
+    expect(changePasswordInput.safeParse({ password: "Long enough 1!", nonce: "123456" }).success).toBe(true);
+    expect(changePasswordInput.safeParse({ password: "Long enough 1!", nonce: "abc" }).success).toBe(false);
   });
 
   it("needs the typed name to delete an account", () => {

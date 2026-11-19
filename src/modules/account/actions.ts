@@ -1,5 +1,6 @@
 "use server";
 
+import { passwordError } from "@/lib/password-rules";
 import { refresh } from "next/cache";
 import {
   AuthError,
@@ -89,7 +90,8 @@ export async function changePassword(input: unknown): Promise<ActionResult<Passw
     const user = await activeUser();
     const parsed = changePasswordInput.safeParse(input);
     if (!parsed.success) {
-      return { ok: false, status: 400, error: "Use at least 8 characters for your new password.", field: "password" };
+      const given = typeof (input as { password?: unknown } | null)?.password === "string" ? (input as { password: string }).password : "";
+      return { ok: false, status: 400, error: passwordError(given) ?? "Check your new password.", field: "password" };
     }
     const { password, currentPassword, nonce } = parsed.data;
     if (!(await hasPasswordSignIn())) {
